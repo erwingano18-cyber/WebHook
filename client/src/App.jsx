@@ -1,7 +1,5 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import DataTable from "datatables.net-dt";
-import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
   fetchConfig,
   fetchLeads,
@@ -47,8 +45,11 @@ function App() {
   );
   const [expandedId, setExpandedId] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const tableRef = useRef(null);
-  const dataTableRef = useRef(null);
+  const [search, setSearch] = useState("");
+  const [sortCol, setSortCol] = useState(0);
+  const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     dispatch(fetchLeads());
@@ -61,45 +62,48 @@ function App() {
     return () => clearInterval(timer);
   }, [dispatch]);
 
-  useEffect(() => {
-    if (!tableRef.current || items.length === 0) {
-      if (dataTableRef.current) {
-        dataTableRef.current.destroy();
-        dataTableRef.current = null;
-      }
-      return;
-    }
-
-    if (dataTableRef.current) {
-      dataTableRef.current.destroy();
-      dataTableRef.current = null;
-    }
-
-    dataTableRef.current = new DataTable(tableRef.current, {
-      pageLength: 10,
-      lengthMenu: [10, 25, 50, 100],
-      order: [[0, "desc"]],
-      autoWidth: false,
-      columnDefs: [{ targets: [2, 5], orderable: false }],
-      language: {
-        search: "Search leads:",
-        lengthMenu: "Show _MENU_",
-        info: "Showing _START_ to _END_ of _TOTAL_ leads",
-        infoEmpty: "No leads available",
-        zeroRecords: "No matching leads found",
-      },
-    });
-
-    return () => {
-      if (dataTableRef.current) {
-        dataTableRef.current.destroy();
-        dataTableRef.current = null;
-      }
-    };
-  }, [items]);
+  useEffect(() => { setPage(0); }, [search, sortCol, sortDir, pageSize]);
 
   const forwardedCount = items.filter((item) => item.emailForwarded).length;
   const syncedCount = items.filter((item) => item.suiteCrmSynced).length;
+
+  const q = search.toLowerCase();
+  const filtered = items.filter((lead) => {
+    if (!q) return true;
+    const fields = getFieldData(lead);
+    return (
+      getFormName(lead).toLowerCase().includes(q) ||
+      JSON.stringify(fields).toLowerCase().includes(q)
+    );
+  });
+
+  const SORTABLE = [0, 1];
+  const sorted = [...filtered].sort((a, b) => {
+    if (!SORTABLE.includes(sortCol)) return 0;
+    const valA = sortCol === 0 ? a.createdAt : getFormName(a);
+    const valB = sortCol === 0 ? b.createdAt : getFormName(b);
+    const cmp = String(valA).localeCompare(String(valB));
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = sorted.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
+  function toggleSort(col) {
+    if (!SORTABLE.includes(col)) return;
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  }
+
+  function sortIndicator(col) {
+    if (sortCol !== col) return " ↕";
+    return sortDir === "asc" ? " ↑" : " ↓";
+  }
 
   return (
     <div className="page">
@@ -148,11 +152,39 @@ function App() {
       ) : null}
 
       <div className="tableWrap">
-        <table ref={tableRef} id="leadsTable">
+        <div className="dt-controls">
+          <div className="dt-left">
+            <label>
+              Show{" "}
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+              >
+                {[10, 25, 50, 100].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>{" "}
+              entries
+            </label>
+          </div>
+          <div className="dt-right">
+            <label>
+              Search:{" "}
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter leads…"
+              />
+            </label>
+          </div>
+        </div>
+
+        <table>
           <thead>
             <tr>
-              <th>Received</th>
-              <th>Form</th>
+              <th className="sortable" onClick={() => toggleSort(0)}>Received{sortIndicator(0)}</th>
+              <th className="sortable" onClick={() => toggleSort(1)}>Form{sortIndicator(1)}</th>
               <th>Data</th>
               <th>Email</th>
               <th>SuiteCRM</th>
@@ -160,14 +192,14 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {!items.length ? (
+            {!paged.length ? (
               <tr>
                 <td colSpan="6" className="empty">
-                  No leads yet.
+                  {search ? "No matching leads." : "No leads yet."}
                 </td>
               </tr>
             ) : (
-              items.map((lead) => {
+              paged.map((lead) => {
                 const action = actionById[lead.id];
                 return (
                   <Fragment key={lead.id}>
@@ -289,6 +321,45 @@ function App() {
             )}
           </tbody>
         </table>
+
+        <div className="dt-footer">
+          <span className="dt-info">
+            {sorted.length === 0
+              ? "No leads"
+              : `Showing ${safePage * pageSize + 1}–${Math.min((safePage + 1) * pageSize, sorted.length)} of ${sorted.length} leads`}
+          </span>
+          <div className="dt-pagination">
+            <button
+              className="btn btn-secondary dt-page-btn"
+              disabled={safePage === 0}
+              onClick={() => setPage(0)}
+            >
+              «
+            </button>
+            <button
+              className="btn btn-secondary dt-page-btn"
+              disabled={safePage === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              ‹
+            </button>
+            <span className="dt-page-num">{safePage + 1} / {totalPages}</span>
+            <button
+              className="btn btn-secondary dt-page-btn"
+              disabled={safePage >= totalPages - 1}
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            >
+              ›
+            </button>
+            <button
+              className="btn btn-secondary dt-page-btn"
+              disabled={safePage >= totalPages - 1}
+              onClick={() => setPage(totalPages - 1)}
+            >
+              »
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
