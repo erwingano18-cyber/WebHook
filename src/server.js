@@ -3,7 +3,7 @@ require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 
-const { getLeads, getLeadById, updateLead } = require("./store");
+const { deleteLead, getLeads, getLeadById, updateLead } = require("./store");
 const { initializeDatabase } = require("./db");
 const {
   parseBoolean,
@@ -85,6 +85,19 @@ app.post("/api/leads/:id/suitecrm", async (req, res) => {
     });
   } catch (error) {
     await updateLead(lead.id, { suiteCrmError: error.message });
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete("/api/leads/:id", async (req, res) => {
+  try {
+    const deleted = await deleteLead(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Lead not found." });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
 });

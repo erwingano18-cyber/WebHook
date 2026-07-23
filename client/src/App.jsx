@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchConfig,
   fetchLeads,
+  runDeleteLead,
   runForwardEmail,
   runSuiteSync,
 } from "./features/leads/leadsSlice";
@@ -43,6 +44,7 @@ function App() {
     (state) => state.leads,
   );
   const [expandedId, setExpandedId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchLeads());
@@ -127,7 +129,7 @@ function App() {
               items.map((lead) => {
                 const action = actionById[lead.id];
                 return (
-                  <>
+                  <Fragment key={lead.id}>
                     <tr key={lead.id}>
                       <td>{formatDate(lead.createdAt)}</td>
                       <td className="form-name">{getFormName(lead)}</td>
@@ -151,41 +153,83 @@ function App() {
                             : statusBadge("Pending", "warn")}
                       </td>
                       <td>
-                        <div className="actions">
+                        <div className="actions actions-menu-wrap">
                           <button
-                            className="btn btn-secondary"
-                            disabled={
-                              lead.emailForwarded || action === "forwarding"
-                            }
-                            onClick={() => dispatch(runForwardEmail(lead.id))}
-                          >
-                            {action === "forwarding"
-                              ? "Forwarding..."
-                              : "Forward Email"}
-                          </button>
-                          <button
-                            className="btn btn-primary"
-                            disabled={
-                              lead.suiteCrmSynced || action === "syncing"
-                            }
-                            onClick={() => dispatch(runSuiteSync(lead.id))}
-                          >
-                            {action === "syncing"
-                              ? "Syncing..."
-                              : "Add to SuiteCRM"}
-                          </button>
-                          <button
-                            className="btn btn-secondary"
+                            className="btn btn-secondary btn-kebab"
+                            aria-label="Open lead actions"
                             onClick={() =>
-                              setExpandedId(
-                                expandedId === lead.id ? null : lead.id,
+                              setOpenMenuId(
+                                openMenuId === lead.id ? null : lead.id,
                               )
                             }
                           >
-                            {expandedId === lead.id
-                              ? "Hide Payload"
-                              : "View Payload"}
+                            ...
                           </button>
+
+                          {openMenuId === lead.id ? (
+                            <div className="actions-menu">
+                              <button
+                                className="actions-item"
+                                disabled={
+                                  lead.emailForwarded || action === "forwarding"
+                                }
+                                onClick={() => {
+                                  dispatch(runForwardEmail(lead.id));
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                {action === "forwarding"
+                                  ? "Forwarding..."
+                                  : "Forward Email"}
+                              </button>
+                              <button
+                                className="actions-item"
+                                disabled={
+                                  lead.suiteCrmSynced || action === "syncing"
+                                }
+                                onClick={() => {
+                                  dispatch(runSuiteSync(lead.id));
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                {action === "syncing"
+                                  ? "Syncing..."
+                                  : "Add to SuiteCRM"}
+                              </button>
+                              <button
+                                className="actions-item"
+                                onClick={() => {
+                                  setExpandedId(
+                                    expandedId === lead.id ? null : lead.id,
+                                  );
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                {expandedId === lead.id
+                                  ? "Hide Payload"
+                                  : "View Payload"}
+                              </button>
+                              <button
+                                className="actions-item danger"
+                                disabled={action === "deleting"}
+                                onClick={() => {
+                                  const ok = window.confirm(
+                                    "Remove this lead permanently?",
+                                  );
+                                  if (!ok) return;
+                                  dispatch(runDeleteLead(lead.id));
+                                  setOpenMenuId(null);
+                                  if (expandedId === lead.id) {
+                                    setExpandedId(null);
+                                  }
+                                }}
+                              >
+                                {action === "deleting"
+                                  ? "Removing..."
+                                  : "Delete / Remove"}
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -198,7 +242,7 @@ function App() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}

@@ -31,6 +31,17 @@ export async function syncLeadToSuiteCrm(id) {
   return data;
 }
 
+export async function removeLead(id) {
+  const response = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to remove lead");
+  }
+
+  return data;
+}
+
 export async function getConfigStatus() {
   const response = await fetch("/api/config");
   const data = await response.json();

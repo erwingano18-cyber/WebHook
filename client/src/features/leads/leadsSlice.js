@@ -3,6 +3,7 @@ import {
   forwardLeadEmail,
   getConfigStatus,
   getLeads,
+  removeLead,
   syncLeadToSuiteCrm,
 } from "./api";
 
@@ -26,6 +27,15 @@ export const runSuiteSync = createAsyncThunk(
   "leads/suitecrm",
   async (id, { dispatch }) => {
     await syncLeadToSuiteCrm(id);
+    await dispatch(fetchLeads());
+    return id;
+  },
+);
+
+export const runDeleteLead = createAsyncThunk(
+  "leads/delete",
+  async (id, { dispatch }) => {
+    await removeLead(id);
     await dispatch(fetchLeads());
     return id;
   },
@@ -77,6 +87,16 @@ const leadsSlice = createSlice({
       .addCase(runSuiteSync.rejected, (state, action) => {
         delete state.actionById[action.meta.arg];
         state.error = action.error.message || "Failed to sync to SuiteCRM";
+      })
+      .addCase(runDeleteLead.pending, (state, action) => {
+        state.actionById[action.meta.arg] = "deleting";
+      })
+      .addCase(runDeleteLead.fulfilled, (state, action) => {
+        delete state.actionById[action.payload];
+      })
+      .addCase(runDeleteLead.rejected, (state, action) => {
+        delete state.actionById[action.meta.arg];
+        state.error = action.error.message || "Failed to remove lead";
       });
   },
 });

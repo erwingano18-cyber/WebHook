@@ -88,6 +88,12 @@ async function getLeadById(id) {
   return mapLeadRow(rows[0] || null);
 }
 
+async function deleteLead(id) {
+  const pool = getPool();
+  const [result] = await pool.query("DELETE FROM leads WHERE id = ?", [id]);
+  return result.affectedRows > 0;
+}
+
 async function updateLead(id, updates) {
   const pool = getPool();
   const allowed = {
@@ -151,6 +157,7 @@ async function updateLead(id, updates) {
 
 module.exports = {
   addLead,
+  deleteLead,
   getLeads,
   getLeadById,
   updateLead,
