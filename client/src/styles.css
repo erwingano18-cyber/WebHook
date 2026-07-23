@@ -102,7 +102,7 @@ h1 {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 980px;
+  min-width: 1100px;
 }
 
 th,
@@ -116,6 +116,29 @@ td {
 .msg {
   max-width: 280px;
   white-space: pre-wrap;
+}
+
+.form-name {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.payload-cell {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--accent);
+}
+
+.payload-pre {
+  margin: 0;
+  padding: 12px 16px;
+  background: #f4f8f3;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre;
 }
 
 .empty {

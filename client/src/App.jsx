@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchConfig,
@@ -19,11 +19,21 @@ function statusBadge(label, type) {
   return <span className={`badge ${type}`}>{label}</span>;
 }
 
+function getFormName(lead) {
+  const rp = lead.rawPayload;
+  if (!rp) return "-";
+  if (rp.payload && rp.payload.name) return rp.payload.name;
+  if (rp.name) return rp.name;
+  if (lead.fields && lead.fields.name) return lead.fields.name;
+  return "-";
+}
+
 function App() {
   const dispatch = useDispatch();
   const { items, status, config, error, actionById } = useSelector(
     (state) => state.leads,
   );
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchLeads());
@@ -90,6 +100,7 @@ function App() {
           <thead>
             <tr>
               <th>Received</th>
+              <th>Form</th>
               <th>Name</th>
               <th>Email</th>
               <th>Phone</th>
@@ -102,7 +113,7 @@ function App() {
           <tbody>
             {!items.length ? (
               <tr>
-                <td colSpan="8" className="empty">
+                <td colSpan="9" className="empty">
                   No leads yet.
                 </td>
               </tr>
@@ -110,51 +121,77 @@ function App() {
               items.map((lead) => {
                 const action = actionById[lead.id];
                 return (
-                  <tr key={lead.id}>
-                    <td>{formatDate(lead.createdAt)}</td>
-                    <td>{lead.name || "-"}</td>
-                    <td>{lead.email || "-"}</td>
-                    <td>{lead.phone || "-"}</td>
-                    <td className="msg">{lead.message || "-"}</td>
-                    <td>
-                      {lead.emailForwarded
-                        ? statusBadge("Forwarded", "ok")
-                        : lead.emailForwardError
-                          ? statusBadge("Error", "danger")
-                          : statusBadge("Pending", "warn")}
-                    </td>
-                    <td>
-                      {lead.suiteCrmSynced
-                        ? statusBadge("Synced", "ok")
-                        : lead.suiteCrmError
-                          ? statusBadge("Error", "danger")
-                          : statusBadge("Pending", "warn")}
-                    </td>
-                    <td>
-                      <div className="actions">
-                        <button
-                          className="btn btn-secondary"
-                          disabled={
-                            lead.emailForwarded || action === "forwarding"
-                          }
-                          onClick={() => dispatch(runForwardEmail(lead.id))}
-                        >
-                          {action === "forwarding"
-                            ? "Forwarding..."
-                            : "Forward Email"}
-                        </button>
-                        <button
-                          className="btn btn-primary"
-                          disabled={lead.suiteCrmSynced || action === "syncing"}
-                          onClick={() => dispatch(runSuiteSync(lead.id))}
-                        >
-                          {action === "syncing"
-                            ? "Syncing..."
-                            : "Add to SuiteCRM"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <>
+                    <tr key={lead.id}>
+                      <td>{formatDate(lead.createdAt)}</td>
+                      <td className="form-name">{getFormName(lead)}</td>
+                      <td>{lead.name || "-"}</td>
+                      <td>{lead.email || "-"}</td>
+                      <td>{lead.phone || "-"}</td>
+                      <td className="msg">{lead.message || "-"}</td>
+                      <td>
+                        {lead.emailForwarded
+                          ? statusBadge("Forwarded", "ok")
+                          : lead.emailForwardError
+                            ? statusBadge("Error", "danger")
+                            : statusBadge("Pending", "warn")}
+                      </td>
+                      <td>
+                        {lead.suiteCrmSynced
+                          ? statusBadge("Synced", "ok")
+                          : lead.suiteCrmError
+                            ? statusBadge("Error", "danger")
+                            : statusBadge("Pending", "warn")}
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="btn btn-secondary"
+                            disabled={
+                              lead.emailForwarded || action === "forwarding"
+                            }
+                            onClick={() => dispatch(runForwardEmail(lead.id))}
+                          >
+                            {action === "forwarding"
+                              ? "Forwarding..."
+                              : "Forward Email"}
+                          </button>
+                          <button
+                            className="btn btn-primary"
+                            disabled={
+                              lead.suiteCrmSynced || action === "syncing"
+                            }
+                            onClick={() => dispatch(runSuiteSync(lead.id))}
+                          >
+                            {action === "syncing"
+                              ? "Syncing..."
+                              : "Add to SuiteCRM"}
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() =>
+                              setExpandedId(
+                                expandedId === lead.id ? null : lead.id,
+                              )
+                            }
+                          >
+                            {expandedId === lead.id
+                              ? "Hide Payload"
+                              : "View Payload"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedId === lead.id && (
+                      <tr key={`${lead.id}-payload`}>
+                        <td colSpan="9" className="payload-cell">
+                          <pre className="payload-pre">
+                            {JSON.stringify(lead.rawPayload, null, 2)}
+                          </pre>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })
             )}
