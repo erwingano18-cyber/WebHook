@@ -58,10 +58,22 @@ function setButtonLoading(button, isLoading, loadingText, defaultText) {
   button.textContent = isLoading ? loadingText : defaultText;
 }
 
-async function callAction(url, button, loadingText, defaultText) {
+function closeAllMenus() {
+  document.querySelectorAll(".actions-menu.open").forEach((menu) => {
+    menu.classList.remove("open");
+  });
+}
+
+async function callAction(
+  url,
+  button,
+  loadingText,
+  defaultText,
+  method = "POST",
+) {
   setButtonLoading(button, true, loadingText, defaultText);
   try {
-    const response = await fetch(url, { method: "POST" });
+    const response = await fetch(url, { method });
     const json = await response.json();
     if (!response.ok) {
       throw new Error(json.error || "Request failed");
@@ -76,26 +88,39 @@ async function callAction(url, button, loadingText, defaultText) {
 
 function makeActionButtons(lead) {
   const wrapper = document.createElement("div");
-  wrapper.className = "actions";
+  wrapper.className = "actions actions-menu-wrap";
 
-  const emailBtn = document.createElement("button");
-  emailBtn.className = "btn btn-secondary";
-  emailBtn.textContent = "Forward Email";
-  emailBtn.disabled = Boolean(lead.emailForwarded);
-  emailBtn.addEventListener("click", () => {
+  const menuBtn = document.createElement("button");
+  menuBtn.className = "btn btn-secondary btn-kebab";
+  menuBtn.type = "button";
+  menuBtn.textContent = "...";
+  menuBtn.setAttribute("aria-label", "Open lead actions");
+
+  const menu = document.createElement("div");
+  menu.className = "actions-menu";
+
+  const forwardBtn = document.createElement("button");
+  forwardBtn.className = "actions-item";
+  forwardBtn.type = "button";
+  forwardBtn.textContent = "Forward Email";
+  forwardBtn.disabled = Boolean(lead.emailForwarded);
+  forwardBtn.addEventListener("click", () => {
+    menu.classList.remove("open");
     callAction(
       `/api/leads/${lead.id}/forward`,
-      emailBtn,
+      forwardBtn,
       "Forwarding...",
       "Forward Email",
     );
   });
 
   const suiteBtn = document.createElement("button");
-  suiteBtn.className = "btn btn-primary";
+  suiteBtn.className = "actions-item";
+  suiteBtn.type = "button";
   suiteBtn.textContent = "Add to SuiteCRM";
   suiteBtn.disabled = Boolean(lead.suiteCrmSynced);
   suiteBtn.addEventListener("click", () => {
+    menu.classList.remove("open");
     callAction(
       `/api/leads/${lead.id}/suitecrm`,
       suiteBtn,
@@ -104,7 +129,43 @@ function makeActionButtons(lead) {
     );
   });
 
-  wrapper.append(emailBtn, suiteBtn);
+  const payloadBtn = document.createElement("button");
+  payloadBtn.className = "actions-item";
+  payloadBtn.type = "button";
+  payloadBtn.textContent = "View Payload";
+  payloadBtn.addEventListener("click", () => {
+    menu.classList.remove("open");
+    alert(JSON.stringify(lead.rawPayload || {}, null, 2));
+  });
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "actions-item danger";
+  deleteBtn.type = "button";
+  deleteBtn.textContent = "Delete / Remove";
+  deleteBtn.addEventListener("click", () => {
+    const ok = window.confirm("Remove this lead permanently?");
+    if (!ok) {
+      menu.classList.remove("open");
+      return;
+    }
+    menu.classList.remove("open");
+    callAction(
+      `/api/leads/${lead.id}`,
+      deleteBtn,
+      "Removing...",
+      "Delete / Remove",
+      "DELETE",
+    );
+  });
+
+  menuBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeAllMenus();
+    menu.classList.toggle("open");
+  });
+
+  menu.append(forwardBtn, suiteBtn, payloadBtn, deleteBtn);
+  wrapper.append(menuBtn, menu);
   return wrapper;
 }
 
@@ -173,6 +234,10 @@ refreshButton.addEventListener("click", () => {
 
 Promise.all([loadServiceConfig(), loadLeads()]).catch((error) => {
   alert(error.message);
+});
+
+document.addEventListener("click", () => {
+  closeAllMenus();
 });
 
 setInterval(() => {
