@@ -1,0 +1,241 @@
+:root {
+  --bg: #f3f4ef;
+  --surface: #ffffff;
+  --surface-strong: #f8f9f4;
+  --text: #1a1f16;
+  --muted: #5f6858;
+  --line: #d7dbcd;
+  --accent: #2f6d62;
+  --accent-strong: #1f4a42;
+  --warn: #8b4d12;
+  --danger: #9b2226;
+  --ok: #1f7a4d;
+  --shadow: 0 20px 50px rgba(22, 31, 24, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at 20% 10%, #fffef7 0%, var(--bg) 60%);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.background-grid {
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(47, 109, 98, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(47, 109, 98, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero {
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #fefef8 0%, #edf2e6 100%);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  box-shadow: var(--shadow);
+  animation: fadeUp 500ms ease-out both;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+h1 {
+  margin: 8px 0;
+  font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.status-cards {
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  animation: fadeUp 700ms ease-out both;
+}
+
+.label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.value {
+  margin: 10px 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.value.small {
+  font-size: 1rem;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeUp 850ms ease-out both;
+}
+
+.table-wrap {
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+
+thead {
+  background: var(--surface-strong);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+td.message {
+  max-width: 280px;
+  white-space: pre-wrap;
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-family: 'IBM Plex Mono', monospace;
+  border: 1px solid;
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 55%, white);
+  background: color-mix(in srgb, var(--ok) 10%, white);
+}
+
+.badge.warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 55%, white);
+  background: color-mix(in srgb, var(--warn) 10%, white);
+}
+
+.badge.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, white);
+  background: color-mix(in srgb, var(--danger) 10%, white);
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #f9fff6;
+}
+
+.btn-secondary {
+  background: #f6f7f1;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 820px) {
+  body {
+    padding: 14px;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-primary {
+    width: 100%;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

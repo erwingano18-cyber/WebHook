@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Webflow Leads Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="background-grid" aria-hidden="true"></div>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Lead Automation</p>
+        <h1>Webflow Form Intake</h1>
+        <p class="subtitle">
+          Incoming Webflow submissions, automatic email forwarding, and
+          one-click SuiteCRM push.
+        </p>
+      </div>
+      <button id="refreshButton" class="btn btn-primary">Refresh Leads</button>
+    </header>
+
+    <section class="status-cards" id="statusCards">
+      <article class="card">
+        <p class="label">Total Leads</p>
+        <p class="value" id="totalLeads">0</p>
+      </article>
+      <article class="card">
+        <p class="label">Forwarded Emails</p>
+        <p class="value" id="forwardedCount">0</p>
+      </article>
+      <article class="card">
+        <p class="label">SuiteCRM Synced</p>
+        <p class="value" id="syncedCount">0</p>
+      </article>
+      <article class="card">
+        <p class="label">Service Status</p>
+        <p class="value small" id="serviceState">Checking...</p>
+      </article>
+    </section>
+
+    <main>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Message</th>
+              <th>Email Status</th>
+              <th>SuiteCRM</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadTableBody">
+            <tr>
+              <td colspan="8" class="empty">No leads yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <template id="leadRowTemplate">
+      <tr>
+        <td class="date"></td>
+        <td class="name"></td>
+        <td class="email"></td>
+        <td class="phone"></td>
+        <td class="message"></td>
+        <td class="email-status"></td>
+        <td class="suite-status"></td>
+        <td class="actions"></td>
+      </tr>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
