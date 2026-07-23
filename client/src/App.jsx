@@ -28,6 +28,15 @@ function getFormName(lead) {
   return "-";
 }
 
+function getFieldData(lead) {
+  const f = lead.fields;
+  if (!f) return {};
+  // old (pre-fix) leads stored the Webflow v2 wrapper; unwrap .data if present
+  if (f.data && typeof f.data === "object" && !Array.isArray(f.data))
+    return f.data;
+  return f;
+}
+
 function App() {
   const dispatch = useDispatch();
   const { items, status, config, error, actionById } = useSelector(
@@ -101,7 +110,6 @@ function App() {
             <tr>
               <th>Received</th>
               <th>Form</th>
-              <th>Name</th>
               <th>Data</th>
               <th>Email</th>
               <th>SuiteCRM</th>
@@ -111,7 +119,7 @@ function App() {
           <tbody>
             {!items.length ? (
               <tr>
-                <td colSpan="7" className="empty">
+                <td colSpan="6" className="empty">
                   No leads yet.
                 </td>
               </tr>
@@ -123,10 +131,9 @@ function App() {
                     <tr key={lead.id}>
                       <td>{formatDate(lead.createdAt)}</td>
                       <td className="form-name">{getFormName(lead)}</td>
-                      <td>{lead.name || "-"}</td>
                       <td className="data-json">
                         <pre className="fields-pre">
-                          {JSON.stringify(lead.fields, null, 2)}
+                          {JSON.stringify(getFieldData(lead), null, 2)}
                         </pre>
                       </td>
                       <td>
@@ -184,7 +191,7 @@ function App() {
                     </tr>
                     {expandedId === lead.id && (
                       <tr key={`${lead.id}-payload`}>
-                        <td colSpan="7" className="payload-cell">
+                        <td colSpan="6" className="payload-cell">
                           <pre className="payload-pre">
                             {JSON.stringify(lead.rawPayload, null, 2)}
                           </pre>
