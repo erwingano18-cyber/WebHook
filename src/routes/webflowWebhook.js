@@ -90,8 +90,10 @@ function checkWebhookSecret(req, res, next) {
     return next();
   }
 
+  // Accept secret via header (API/server-side callers) or query param (Webflow native form action)
   const headerSecret = req.headers["x-webhook-secret"];
-  if (headerSecret !== expectedSecret) {
+  const querySecret = req.query.secret;
+  if (headerSecret !== expectedSecret && querySecret !== expectedSecret) {
     return res.status(401).json({ error: "Unauthorized webhook call." });
   }
 
