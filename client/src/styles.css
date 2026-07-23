@@ -118,6 +118,18 @@ td {
   white-space: pre-wrap;
 }
 
+.data-json {
+  max-width: 320px;
+}
+
+.fields-pre {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .form-name {
   font-size: 0.85rem;
   color: var(--muted);

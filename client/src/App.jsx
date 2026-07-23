@@ -102,9 +102,7 @@ function App() {
               <th>Received</th>
               <th>Form</th>
               <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Message</th>
+              <th>Data</th>
               <th>Email</th>
               <th>SuiteCRM</th>
               <th>Actions</th>
@@ -113,7 +111,7 @@ function App() {
           <tbody>
             {!items.length ? (
               <tr>
-                <td colSpan="9" className="empty">
+                <td colSpan="7" className="empty">
                   No leads yet.
                 </td>
               </tr>
@@ -126,9 +124,11 @@ function App() {
                       <td>{formatDate(lead.createdAt)}</td>
                       <td className="form-name">{getFormName(lead)}</td>
                       <td>{lead.name || "-"}</td>
-                      <td>{lead.email || "-"}</td>
-                      <td>{lead.phone || "-"}</td>
-                      <td className="msg">{lead.message || "-"}</td>
+                      <td className="data-json">
+                        <pre className="fields-pre">
+                          {JSON.stringify(lead.fields, null, 2)}
+                        </pre>
+                      </td>
                       <td>
                         {lead.emailForwarded
                           ? statusBadge("Forwarded", "ok")
@@ -184,7 +184,7 @@ function App() {
                     </tr>
                     {expandedId === lead.id && (
                       <tr key={`${lead.id}-payload`}>
-                        <td colSpan="9" className="payload-cell">
+                        <td colSpan="7" className="payload-cell">
                           <pre className="payload-pre">
                             {JSON.stringify(lead.rawPayload, null, 2)}
                           </pre>
