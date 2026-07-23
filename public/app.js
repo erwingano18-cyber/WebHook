@@ -64,6 +64,25 @@ function closeAllMenus() {
   });
 }
 
+function openMenuAtButton(button, menu) {
+  closeAllMenus();
+  menu.classList.add("open");
+
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+
+  let top = buttonRect.bottom + 6;
+  if (top + menuRect.height > window.innerHeight - 8) {
+    top = Math.max(8, buttonRect.top - menuRect.height - 6);
+  }
+
+  let left = buttonRect.right - menuRect.width;
+  left = Math.max(8, Math.min(left, window.innerWidth - menuRect.width - 8));
+
+  menu.style.top = `${top}px`;
+  menu.style.left = `${left}px`;
+}
+
 async function callAction(
   url,
   button,
@@ -160,8 +179,16 @@ function makeActionButtons(lead) {
 
   menuBtn.addEventListener("click", (event) => {
     event.stopPropagation();
-    closeAllMenus();
-    menu.classList.toggle("open");
+    if (menu.classList.contains("open")) {
+      menu.classList.remove("open");
+      return;
+    }
+
+    openMenuAtButton(menuBtn, menu);
+  });
+
+  menu.addEventListener("click", (event) => {
+    event.stopPropagation();
   });
 
   menu.append(forwardBtn, suiteBtn, payloadBtn, deleteBtn);

@@ -227,9 +227,7 @@ td.message {
 }
 
 .actions-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
   display: none;
   width: 190px;
   border: 1px solid var(--line);
