@@ -6,6 +6,10 @@ const totalLeadsNode = document.getElementById("totalLeads");
 const forwardedCountNode = document.getElementById("forwardedCount");
 const syncedCountNode = document.getElementById("syncedCount");
 const serviceStateNode = document.getElementById("serviceState");
+const floatingMenu = document.createElement("div");
+
+floatingMenu.className = "actions-menu";
+document.body.appendChild(floatingMenu);
 
 function formatDate(value) {
   if (!value) {
@@ -59,17 +63,83 @@ function setButtonLoading(button, isLoading, loadingText, defaultText) {
 }
 
 function closeAllMenus() {
-  document.querySelectorAll(".actions-menu.open").forEach((menu) => {
-    menu.classList.remove("open");
-  });
+  floatingMenu.classList.remove("open");
+  floatingMenu.replaceChildren();
+  delete floatingMenu.dataset.leadId;
 }
 
-function openMenuAtButton(button, menu) {
+function buildMenuItems(lead) {
+  const forwardBtn = document.createElement("button");
+  forwardBtn.className = "actions-item";
+  forwardBtn.type = "button";
+  forwardBtn.textContent = "Forward Email";
+  forwardBtn.disabled = Boolean(lead.emailForwarded);
+  forwardBtn.addEventListener("click", () => {
+    closeAllMenus();
+    callAction(
+      `/api/leads/${lead.id}/forward`,
+      forwardBtn,
+      "Forwarding...",
+      "Forward Email",
+    );
+  });
+
+  const suiteBtn = document.createElement("button");
+  suiteBtn.className = "actions-item";
+  suiteBtn.type = "button";
+  suiteBtn.textContent = "Add to SuiteCRM";
+  suiteBtn.disabled = Boolean(lead.suiteCrmSynced);
+  suiteBtn.addEventListener("click", () => {
+    closeAllMenus();
+    callAction(
+      `/api/leads/${lead.id}/suitecrm`,
+      suiteBtn,
+      "Syncing...",
+      "Add to SuiteCRM",
+    );
+  });
+
+  const payloadBtn = document.createElement("button");
+  payloadBtn.className = "actions-item";
+  payloadBtn.type = "button";
+  payloadBtn.textContent = "View Payload";
+  payloadBtn.addEventListener("click", () => {
+    closeAllMenus();
+    alert(JSON.stringify(lead.rawPayload || {}, null, 2));
+  });
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "actions-item danger";
+  deleteBtn.type = "button";
+  deleteBtn.textContent = "Delete / Remove";
+  deleteBtn.addEventListener("click", () => {
+    const ok = window.confirm("Remove this lead permanently?");
+    if (!ok) {
+      closeAllMenus();
+      return;
+    }
+
+    closeAllMenus();
+    callAction(
+      `/api/leads/${lead.id}`,
+      deleteBtn,
+      "Removing...",
+      "Delete / Remove",
+      "DELETE",
+    );
+  });
+
+  return [forwardBtn, suiteBtn, payloadBtn, deleteBtn];
+}
+
+function openMenuAtButton(button, lead) {
   closeAllMenus();
-  menu.classList.add("open");
+  floatingMenu.append(...buildMenuItems(lead));
+  floatingMenu.dataset.leadId = lead.id;
+  floatingMenu.classList.add("open");
 
   const buttonRect = button.getBoundingClientRect();
-  const menuRect = menu.getBoundingClientRect();
+  const menuRect = floatingMenu.getBoundingClientRect();
 
   let top = buttonRect.bottom + 6;
   if (top + menuRect.height > window.innerHeight - 8) {
@@ -79,8 +149,8 @@ function openMenuAtButton(button, menu) {
   let left = buttonRect.right - menuRect.width;
   left = Math.max(8, Math.min(left, window.innerWidth - menuRect.width - 8));
 
-  menu.style.top = `${top}px`;
-  menu.style.left = `${left}px`;
+  floatingMenu.style.top = `${top}px`;
+  floatingMenu.style.left = `${left}px`;
 }
 
 async function callAction(
@@ -115,89 +185,26 @@ function makeActionButtons(lead) {
   menuBtn.textContent = "...";
   menuBtn.setAttribute("aria-label", "Open lead actions");
 
-  const menu = document.createElement("div");
-  menu.className = "actions-menu";
-
-  const forwardBtn = document.createElement("button");
-  forwardBtn.className = "actions-item";
-  forwardBtn.type = "button";
-  forwardBtn.textContent = "Forward Email";
-  forwardBtn.disabled = Boolean(lead.emailForwarded);
-  forwardBtn.addEventListener("click", () => {
-    menu.classList.remove("open");
-    callAction(
-      `/api/leads/${lead.id}/forward`,
-      forwardBtn,
-      "Forwarding...",
-      "Forward Email",
-    );
-  });
-
-  const suiteBtn = document.createElement("button");
-  suiteBtn.className = "actions-item";
-  suiteBtn.type = "button";
-  suiteBtn.textContent = "Add to SuiteCRM";
-  suiteBtn.disabled = Boolean(lead.suiteCrmSynced);
-  suiteBtn.addEventListener("click", () => {
-    menu.classList.remove("open");
-    callAction(
-      `/api/leads/${lead.id}/suitecrm`,
-      suiteBtn,
-      "Syncing...",
-      "Add to SuiteCRM",
-    );
-  });
-
-  const payloadBtn = document.createElement("button");
-  payloadBtn.className = "actions-item";
-  payloadBtn.type = "button";
-  payloadBtn.textContent = "View Payload";
-  payloadBtn.addEventListener("click", () => {
-    menu.classList.remove("open");
-    alert(JSON.stringify(lead.rawPayload || {}, null, 2));
-  });
-
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "actions-item danger";
-  deleteBtn.type = "button";
-  deleteBtn.textContent = "Delete / Remove";
-  deleteBtn.addEventListener("click", () => {
-    const ok = window.confirm("Remove this lead permanently?");
-    if (!ok) {
-      menu.classList.remove("open");
-      return;
-    }
-    menu.classList.remove("open");
-    callAction(
-      `/api/leads/${lead.id}`,
-      deleteBtn,
-      "Removing...",
-      "Delete / Remove",
-      "DELETE",
-    );
-  });
-
   menuBtn.addEventListener("click", (event) => {
     event.stopPropagation();
-    if (menu.classList.contains("open")) {
-      menu.classList.remove("open");
+    if (
+      floatingMenu.classList.contains("open") &&
+      floatingMenu.dataset.leadId === lead.id
+    ) {
+      closeAllMenus();
       return;
     }
 
-    openMenuAtButton(menuBtn, menu);
+    openMenuAtButton(menuBtn, lead);
   });
 
-  menu.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-
-  menu.append(forwardBtn, suiteBtn, payloadBtn, deleteBtn);
-  wrapper.append(menuBtn, menu);
+  wrapper.append(menuBtn);
   return wrapper;
 }
 
 function renderLeadRows(leads) {
   tableBody.innerHTML = "";
+  closeAllMenus();
 
   if (!leads.length) {
     tableBody.innerHTML =
@@ -264,6 +271,14 @@ Promise.all([loadServiceConfig(), loadLeads()]).catch((error) => {
 });
 
 document.addEventListener("click", () => {
+  closeAllMenus();
+});
+
+floatingMenu.addEventListener("click", (event) => {
+  event.stopPropagation();
+});
+
+window.addEventListener("resize", () => {
   closeAllMenus();
 });
 
