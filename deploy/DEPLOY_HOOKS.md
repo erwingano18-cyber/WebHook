@@ -20,11 +20,11 @@ sudo npm install -g pm2
 
 ## 3) Deploy project
 
-sudo mkdir -p /var/www
-cd /var/www
+sudo mkdir -p /var/www/hooks.xiliumonline.net
+cd /var/www/hooks.xiliumonline.net
 sudo git clone https://github.com/erwingano18-cyber/WebHook.git
-sudo chown -R $USER:$USER /var/www/WebHook
-cd /var/www/WebHook
+sudo chown -R $USER:$USER /var/www/hooks.xiliumonline.net/WebHook
+cd /var/www/hooks.xiliumonline.net/WebHook
 npm install
 npm --prefix client install
 npm --prefix client run build
