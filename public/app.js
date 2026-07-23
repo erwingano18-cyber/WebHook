@@ -1,12 +1,14 @@
 const tableBody = document.getElementById("leadTableBody");
 const template = document.getElementById("leadRowTemplate");
 const refreshButton = document.getElementById("refreshButton");
+const leadTable = document.getElementById("leadTable");
 
 const totalLeadsNode = document.getElementById("totalLeads");
 const forwardedCountNode = document.getElementById("forwardedCount");
 const syncedCountNode = document.getElementById("syncedCount");
 const serviceStateNode = document.getElementById("serviceState");
 const floatingMenu = document.createElement("div");
+let dataTable = null;
 
 floatingMenu.className = "actions-menu";
 document.body.appendChild(floatingMenu);
@@ -66,6 +68,39 @@ function closeAllMenus() {
   floatingMenu.classList.remove("open");
   floatingMenu.replaceChildren();
   delete floatingMenu.dataset.leadId;
+}
+
+function initializeDataTable() {
+  if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
+    return;
+  }
+
+  if (dataTable) {
+    return;
+  }
+
+  dataTable = window.jQuery(leadTable).DataTable({
+    pageLength: 10,
+    lengthMenu: [10, 25, 50, 100],
+    order: [[0, "desc"]],
+    autoWidth: false,
+    language: {
+      search: "Search leads:",
+      lengthMenu: "Show _MENU_",
+      info: "Showing _START_ to _END_ of _TOTAL_ leads",
+      infoEmpty: "No leads available",
+      zeroRecords: "No matching leads found",
+    },
+  });
+}
+
+function resetDataTable() {
+  if (!dataTable) {
+    return;
+  }
+
+  dataTable.destroy();
+  dataTable = null;
 }
 
 function buildMenuItems(lead) {
@@ -203,6 +238,7 @@ function makeActionButtons(lead) {
 }
 
 function renderLeadRows(leads) {
+  resetDataTable();
   tableBody.innerHTML = "";
   closeAllMenus();
 
@@ -228,6 +264,8 @@ function renderLeadRows(leads) {
 
     tableBody.appendChild(row);
   }
+
+  initializeDataTable();
 }
 
 async function loadServiceConfig() {

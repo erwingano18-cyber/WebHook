@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -48,7 +52,7 @@
 
     <main>
       <div class="table-wrap">
-        <table>
+        <table id="leadTable">
           <thead>
             <tr>
               <th>Received</th>
@@ -83,6 +87,8 @@
       </tr>
     </template>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
