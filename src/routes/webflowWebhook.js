@@ -6,6 +6,23 @@ const { sendLeadEmail } = require("../services");
 
 const router = express.Router();
 
+router.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    message: "Webhook router is active.",
+    endpoint: "/webhook/webflow",
+    method: "POST",
+  });
+});
+
+router.get("/webflow", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    message: "Webflow webhook endpoint is reachable.",
+    expectedMethod: "POST",
+  });
+});
+
 function normalizeFields(payload) {
   if (!payload || typeof payload !== "object") {
     return {};
@@ -25,7 +42,13 @@ function normalizeFields(payload) {
   }
 
   if (candidate.payload && typeof candidate.payload === "object") {
-    return candidate.payload;
+    const inner = candidate.payload;
+    // Webflow v2: { triggerType, payload: { data: { fieldName: value }, name, submittedAt, ... } }
+    // The actual form field key-values are inside payload.data
+    if (inner.data && typeof inner.data === "object" && !Array.isArray(inner.data)) {
+      return inner.data;
+    }
+    return inner;
   }
 
   return candidate;
