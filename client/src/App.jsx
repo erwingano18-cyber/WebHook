@@ -1,5 +1,8 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import $ from "jquery";
+import DataTable from "datatables.net-dt";
+import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
   fetchConfig,
   fetchLeads,
@@ -7,6 +10,8 @@ import {
   runForwardEmail,
   runSuiteSync,
 } from "./features/leads/leadsSlice";
+
+DataTable(window, $);
 
 function formatDate(date) {
   if (!date) {
@@ -45,6 +50,8 @@ function App() {
   );
   const [expandedId, setExpandedId] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const tableRef = useRef(null);
+  const dataTableRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchLeads());
@@ -56,6 +63,43 @@ function App() {
 
     return () => clearInterval(timer);
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!tableRef.current || items.length === 0) {
+      if (dataTableRef.current) {
+        dataTableRef.current.destroy();
+        dataTableRef.current = null;
+      }
+      return;
+    }
+
+    if (dataTableRef.current) {
+      dataTableRef.current.destroy();
+      dataTableRef.current = null;
+    }
+
+    dataTableRef.current = $(tableRef.current).DataTable({
+      pageLength: 10,
+      lengthMenu: [10, 25, 50, 100],
+      order: [[0, "desc"]],
+      autoWidth: false,
+      columnDefs: [{ targets: [2, 5], orderable: false }],
+      language: {
+        search: "Search leads:",
+        lengthMenu: "Show _MENU_",
+        info: "Showing _START_ to _END_ of _TOTAL_ leads",
+        infoEmpty: "No leads available",
+        zeroRecords: "No matching leads found",
+      },
+    });
+
+    return () => {
+      if (dataTableRef.current) {
+        dataTableRef.current.destroy();
+        dataTableRef.current = null;
+      }
+    };
+  }, [items]);
 
   const forwardedCount = items.filter((item) => item.emailForwarded).length;
   const syncedCount = items.filter((item) => item.suiteCrmSynced).length;
@@ -107,7 +151,7 @@ function App() {
       ) : null}
 
       <div className="tableWrap">
-        <table>
+        <table ref={tableRef} id="leadsTable">
           <thead>
             <tr>
               <th>Received</th>
