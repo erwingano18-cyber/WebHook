@@ -97,6 +97,7 @@ h1 {
   overflow: auto;
   border: 1px solid var(--line);
   background: var(--paper);
+  padding: 20px;
 }
 
 table {
