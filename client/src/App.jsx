@@ -62,7 +62,9 @@ function App() {
     return () => clearInterval(timer);
   }, [dispatch]);
 
-  useEffect(() => { setPage(0); }, [search, sortCol, sortDir, pageSize]);
+  useEffect(() => {
+    setPage(0);
+  }, [search, sortCol, sortDir, pageSize]);
 
   const forwardedCount = items.filter((item) => item.emailForwarded).length;
   const syncedCount = items.filter((item) => item.suiteCrmSynced).length;
@@ -88,7 +90,10 @@ function App() {
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
-  const paged = sorted.slice(safePage * pageSize, safePage * pageSize + pageSize);
+  const paged = sorted.slice(
+    safePage * pageSize,
+    safePage * pageSize + pageSize,
+  );
 
   function toggleSort(col) {
     if (!SORTABLE.includes(col)) return;
@@ -161,7 +166,9 @@ function App() {
                 onChange={(e) => setPageSize(Number(e.target.value))}
               >
                 {[10, 25, 50, 100].map((n) => (
-                  <option key={n} value={n}>{n}</option>
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
                 ))}
               </select>{" "}
               entries
@@ -183,8 +190,12 @@ function App() {
         <table>
           <thead>
             <tr>
-              <th className="sortable" onClick={() => toggleSort(0)}>Received{sortIndicator(0)}</th>
-              <th className="sortable" onClick={() => toggleSort(1)}>Form{sortIndicator(1)}</th>
+              <th className="sortable" onClick={() => toggleSort(0)}>
+                Received{sortIndicator(0)}
+              </th>
+              <th className="sortable" onClick={() => toggleSort(1)}>
+                Form{sortIndicator(1)}
+              </th>
               <th>Data</th>
               <th>Email</th>
               <th>SuiteCRM</th>
@@ -343,7 +354,9 @@ function App() {
             >
               ‹
             </button>
-            <span className="dt-page-num">{safePage + 1} / {totalPages}</span>
+            <span className="dt-page-num">
+              {safePage + 1} / {totalPages}
+            </span>
             <button
               className="btn btn-secondary dt-page-btn"
               disabled={safePage >= totalPages - 1}
