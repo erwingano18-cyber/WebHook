@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import $ from "jquery";
 import DataTable from "datatables.net-dt";
 import "datatables.net-dt/css/dataTables.dataTables.css";
 import {
@@ -10,8 +9,6 @@ import {
   runForwardEmail,
   runSuiteSync,
 } from "./features/leads/leadsSlice";
-
-DataTable(window, $);
 
 function formatDate(date) {
   if (!date) {
@@ -78,7 +75,7 @@ function App() {
       dataTableRef.current = null;
     }
 
-    dataTableRef.current = $(tableRef.current).DataTable({
+    dataTableRef.current = new DataTable(tableRef.current, {
       pageLength: 10,
       lengthMenu: [10, 25, 50, 100],
       order: [[0, "desc"]],
