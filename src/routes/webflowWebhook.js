@@ -45,7 +45,11 @@ function normalizeFields(payload) {
     const inner = candidate.payload;
     // Webflow v2: { triggerType, payload: { data: { fieldName: value }, name, submittedAt, ... } }
     // The actual form field key-values are inside payload.data
-    if (inner.data && typeof inner.data === "object" && !Array.isArray(inner.data)) {
+    if (
+      inner.data &&
+      typeof inner.data === "object" &&
+      !Array.isArray(inner.data)
+    ) {
       return inner.data;
     }
     return inner;
