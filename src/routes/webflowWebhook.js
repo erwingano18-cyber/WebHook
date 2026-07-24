@@ -104,20 +104,34 @@ router.post("/webflow", checkWebhookSecret, async (req, res) => {
   try {
     const lead = extractLeadFromPayload(req.body);
     const savedLead = await addLead(lead);
+    let emailForwarded = false;
+    let emailForwardError = null;
 
     try {
       const result = await sendLeadEmail(savedLead);
       if (!result.skipped) {
+        emailForwarded = true;
         await updateLead(savedLead.id, {
           emailForwarded: true,
           emailForwardedAt: new Date().toISOString(),
         });
+      } else {
+        emailForwardError = result.reason;
+        await updateLead(savedLead.id, {
+          emailForwardError: result.reason,
+        });
       }
     } catch (emailError) {
+      emailForwardError = emailError.message;
       await updateLead(savedLead.id, { emailForwardError: emailError.message });
     }
 
-    res.status(201).json({ success: true, leadId: savedLead.id });
+    res.status(201).json({
+      success: true,
+      leadId: savedLead.id,
+      emailForwarded,
+      emailForwardError,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

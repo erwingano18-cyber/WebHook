@@ -4,17 +4,29 @@ const nodemailer = require("nodemailer");
 let cachedSuiteToken = null;
 let tokenExpiryTime = 0;
 
+function cleanEnv(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
 function parseBoolean(value, defaultValue = false) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
   }
 
-  return String(value).toLowerCase() === "true";
+  return String(value).trim().toLowerCase() === "true";
 }
 
 function createMailer() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } =
-    process.env;
+  const SMTP_HOST = cleanEnv(process.env.SMTP_HOST);
+  const SMTP_PORT = cleanEnv(process.env.SMTP_PORT);
+  const SMTP_SECURE = process.env.SMTP_SECURE;
+  const SMTP_USER =
+    cleanEnv(process.env.SMTP_USER) || cleanEnv(process.env.EMAIL_FROM);
+  const SMTP_PASS = cleanEnv(process.env.SMTP_PASS);
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
     return null;
@@ -46,8 +58,9 @@ function toLeadHtml(lead) {
 
 async function sendLeadEmail(lead) {
   const enabled = parseBoolean(process.env.AUTO_FORWARD_ENABLED, true);
-  const to = process.env.FORWARD_TO_EMAIL;
-  const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
+  const to = cleanEnv(process.env.FORWARD_TO_EMAIL);
+  const from =
+    cleanEnv(process.env.EMAIL_FROM) || cleanEnv(process.env.SMTP_USER);
 
   if (!enabled) {
     return { skipped: true, reason: "AUTO_FORWARD_ENABLED is false" };
