@@ -118,11 +118,21 @@ app.post("/api/auth/google", async (req, res) => {
 
     const email = String(payload.email).toLowerCase();
     const emailDomain = email.includes("@") ? email.split("@")[1] : "";
-    const domainAllowed = !allowedDomain || emailDomain === allowedDomain;
-    const emailAllowed =
-      allowedEmails.length === 0 || allowedEmails.includes(email);
+    const domainMatches = allowedDomain && emailDomain === allowedDomain;
+    const emailMatches = allowedEmails.includes(email);
+    const hasDomainRule = Boolean(allowedDomain);
+    const hasEmailRule = allowedEmails.length > 0;
 
-    if (!domainAllowed || !emailAllowed) {
+    let accountAllowed = true;
+    if (hasDomainRule && hasEmailRule) {
+      accountAllowed = domainMatches || emailMatches;
+    } else if (hasDomainRule) {
+      accountAllowed = domainMatches;
+    } else if (hasEmailRule) {
+      accountAllowed = emailMatches;
+    }
+
+    if (!accountAllowed) {
       return res.status(403).json({ error: "Account is not allowed." });
     }
 
