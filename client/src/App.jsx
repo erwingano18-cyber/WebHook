@@ -1,5 +1,11 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  getCurrentUser,
+  getGoogleConfig,
+  loginWithGoogle,
+  logout,
+} from "./features/leads/api";
 import {
   fetchConfig,
   fetchLeads,
@@ -58,8 +64,91 @@ function App() {
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [authReady, setAuthReady] = useState(false);
+  const [user, setUser] = useState(null);
+  const [googleClientId, setGoogleClientId] = useState("");
+  const [authError, setAuthError] = useState("");
+  const googleButtonRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapAuth() {
+      try {
+        const config = await getGoogleConfig();
+        if (!cancelled) {
+          setGoogleClientId(config.googleClientId || "");
+        }
+      } catch {
+        if (!cancelled) {
+          setGoogleClientId("");
+        }
+      }
+
+      try {
+        const me = await getCurrentUser();
+        if (!cancelled) {
+          setUser(me.user || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      }
+    }
+
+    bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady || user || !googleClientId || !googleButtonRef.current) {
+      return;
+    }
+
+    if (
+      !window.google ||
+      !window.google.accounts ||
+      !window.google.accounts.id
+    ) {
+      setAuthError("Google script did not load. Refresh and try again.");
+      return;
+    }
+
+    googleButtonRef.current.innerHTML = "";
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: async (response) => {
+        try {
+          setAuthError("");
+          const result = await loginWithGoogle(response.credential);
+          setUser(result.user || null);
+        } catch (error) {
+          setAuthError(error.message || "Google sign-in failed");
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "pill",
+      width: 260,
+    });
+  }, [authReady, user, googleClientId]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     dispatch(fetchLeads());
     dispatch(fetchConfig());
 
@@ -68,7 +157,7 @@ function App() {
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   useEffect(() => {
     setPage(0);
@@ -118,6 +207,48 @@ function App() {
     return sortDir === "asc" ? " ↑" : " ↓";
   }
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } finally {
+      setUser(null);
+      setOpenMenuId(null);
+      setExpandedId(null);
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="page">
+        <p className="loading">Checking session...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="page">
+        <header className="hero">
+          <div>
+            <p className="eyebrow">Secure Access</p>
+            <h1>Webflow Leads Dashboard</h1>
+            <p className="sub">Sign in with Google to view and manage leads.</p>
+          </div>
+        </header>
+        <section className="login-card">
+          {!googleClientId ? (
+            <p className="error">
+              GOOGLE_CLIENT_ID is not configured on the server.
+            </p>
+          ) : (
+            <div ref={googleButtonRef}></div>
+          )}
+          {authError ? <p className="error">{authError}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
       <header className="hero">
@@ -127,13 +258,19 @@ function App() {
           <p className="sub">
             React + Vite + Redux frontend connected to your webhook backend.
           </p>
+          <p className="sub user-meta">Signed in as {user.email}</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => dispatch(fetchLeads())}
-        >
-          Refresh
-        </button>
+        <div className="hero-actions">
+          <button
+            className="btn btn-primary"
+            onClick={() => dispatch(fetchLeads())}
+          >
+            Refresh
+          </button>
+          <button className="btn btn-secondary" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       <section className="stats">

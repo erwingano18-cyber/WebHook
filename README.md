@@ -54,6 +54,13 @@ Webhook security:
 
 - `WEBFLOW_WEBHOOK_SECRET=your-secret`
 
+Google dashboard login values:
+
+- `GOOGLE_CLIENT_ID=your-google-oauth-client-id`
+- `AUTH_JWT_SECRET=long-random-secret`
+- `AUTH_ALLOWED_GOOGLE_DOMAIN=` (optional, e.g. `xillium.com`)
+- `AUTH_ALLOWED_GOOGLE_EMAILS=` (optional comma-separated allow list)
+
 Email forwarding values:
 
 - `AUTO_FORWARD_ENABLED=true`
@@ -97,6 +104,10 @@ If secret is enabled, include header:
 
 ## API Endpoints
 
+- `GET /api/auth/google/config`
+- `POST /api/auth/google`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
 - `POST /webhook/webflow`
 - `GET /api/leads`
 - `POST /api/leads/:id/forward`

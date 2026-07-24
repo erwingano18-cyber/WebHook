@@ -1,54 +1,70 @@
-export async function getLeads() {
-  const response = await fetch("/api/leads");
-  const data = await response.json();
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || "Failed to load leads");
+    throw new Error(data.error || "Request failed");
   }
+
+  return data;
+}
+
+export async function getGoogleConfig() {
+  return apiFetch("/api/auth/google/config", {
+    headers: {},
+  });
+}
+
+export async function getCurrentUser() {
+  return apiFetch("/api/auth/me", {
+    headers: {},
+  });
+}
+
+export async function loginWithGoogle(credential) {
+  return apiFetch("/api/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ credential }),
+  });
+}
+
+export async function logout() {
+  return apiFetch("/api/auth/logout", {
+    method: "POST",
+  });
+}
+
+export async function getLeads() {
+  const data = await apiFetch("/api/leads", { headers: {} });
 
   return data.leads || [];
 }
 
 export async function forwardLeadEmail(id) {
-  const response = await fetch(`/api/leads/${id}/forward`, { method: "POST" });
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to forward email");
-  }
-
-  return data;
+  return apiFetch(`/api/leads/${id}/forward`, { method: "POST" });
 }
 
 export async function syncLeadToSuiteCrm(id) {
-  const response = await fetch(`/api/leads/${id}/suitecrm`, { method: "POST" });
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to sync to SuiteCRM");
-  }
-
-  return data;
+  return apiFetch(`/api/leads/${id}/suitecrm`, { method: "POST" });
 }
 
 export async function removeLead(id) {
-  const response = await fetch(`/api/leads/${id}`, { method: "DELETE" });
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to remove lead");
-  }
-
-  return data;
+  return apiFetch(`/api/leads/${id}`, { method: "DELETE" });
 }
 
 export async function getConfigStatus() {
-  const response = await fetch("/api/config");
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to load config");
-  }
-
-  return data;
+  return apiFetch("/api/config", { headers: {} });
 }

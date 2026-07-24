@@ -55,6 +55,17 @@ h1 {
   color: var(--muted);
 }
 
+.user-meta {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .stats {
   margin-top: 16px;
   display: grid;
@@ -98,6 +109,17 @@ h1 {
   border: 1px solid var(--line);
   background: var(--paper);
   padding: 20px;
+}
+
+.login-card {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
 }
 
 .dt-controls {
