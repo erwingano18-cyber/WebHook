@@ -239,7 +239,7 @@ function App() {
                       <td>
                         <div className="actions actions-menu-wrap">
                           <button
-                            className="btn btn-secondary btn-kebab"
+                            className="kebab-trigger"
                             type="button"
                             aria-label="Open lead actions"
                             onClick={() =>
