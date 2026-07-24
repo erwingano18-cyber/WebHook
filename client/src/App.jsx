@@ -239,7 +239,7 @@ function App() {
                       <td>
                         <div className="actions actions-menu-wrap">
                           <button
-                            className="btn btn-secondary btn-kebab"
+                            className=""
                             aria-label="Open lead actions"
                             onClick={() =>
                               setOpenMenuId(
@@ -247,7 +247,7 @@ function App() {
                               )
                             }
                           >
-                            ...
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
                           </button>
 
                           {openMenuId === lead.id ? (
