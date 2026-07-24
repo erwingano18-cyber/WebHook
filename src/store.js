@@ -42,6 +42,9 @@ function mapLeadRow(row) {
       ? JSON.parse(row.suitecrm_response_json)
       : null,
     suiteCrmError: row.suitecrm_error,
+    spamScore: Number(row.spam_score || 0),
+    spamLabel: row.spam_label || "not_spam",
+    spamReasons: row.spam_reasons_json ? JSON.parse(row.spam_reasons_json) : [],
   };
 }
 
@@ -51,8 +54,9 @@ async function addLead(lead) {
     `
       INSERT INTO leads (
         id, created_at, source, name, email, phone, message,
-        fields_json, raw_payload_json, email_forwarded, suitecrm_synced
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        fields_json, raw_payload_json, email_forwarded, suitecrm_synced,
+        spam_score, spam_label, spam_reasons_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       lead.id,
@@ -66,6 +70,9 @@ async function addLead(lead) {
       JSON.stringify(lead.rawPayload || {}),
       lead.emailForwarded ? 1 : 0,
       lead.suiteCrmSynced ? 1 : 0,
+      Number(lead.spamScore || 0),
+      lead.spamLabel || "not_spam",
+      JSON.stringify(lead.spamReasons || []),
     ],
   );
 
@@ -111,6 +118,9 @@ async function updateLead(id, updates) {
     suiteCrmSyncedAt: "suitecrm_synced_at",
     suiteCrmResponse: "suitecrm_response_json",
     suiteCrmError: "suitecrm_error",
+    spamScore: "spam_score",
+    spamLabel: "spam_label",
+    spamReasons: "spam_reasons_json",
   };
 
   const setClauses = [];
@@ -127,7 +137,8 @@ async function updateLead(id, updates) {
     if (
       key === "fields" ||
       key === "rawPayload" ||
-      key === "suiteCrmResponse"
+      key === "suiteCrmResponse" ||
+      key === "spamReasons"
     ) {
       out = value == null ? null : JSON.stringify(value);
     }
@@ -138,6 +149,10 @@ async function updateLead(id, updates) {
 
     if (key === "emailForwardedAt" || key === "suiteCrmSyncedAt") {
       out = normalizeDate(value);
+    }
+
+    if (key === "spamScore") {
+      out = Number(value || 0);
     }
 
     setClauses.push(`${column} = ?`);

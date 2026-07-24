@@ -57,6 +57,8 @@ Webhook security:
 Email forwarding values:
 
 - `AUTO_FORWARD_ENABLED=true`
+- `SPAM_SCORE_THRESHOLD=5`
+- `FORWARD_SPAM_LEADS=false`
 - `FORWARD_TO_EMAIL=you@example.com`
 - `EMAIL_FROM=no-reply@yourdomain.com`
 - `SMTP_HOST=...`

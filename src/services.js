@@ -56,6 +56,98 @@ function toLeadHtml(lead) {
   `;
 }
 
+function normalizeText(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value).toLowerCase();
+}
+
+function countMatches(text, pattern) {
+  const matches = text.match(pattern);
+  return matches ? matches.length : 0;
+}
+
+function classifyLeadSpam(lead) {
+  const scoreThreshold = Number(process.env.SPAM_SCORE_THRESHOLD || 5);
+  const fieldBlob = JSON.stringify(lead.fields || {}).toLowerCase();
+  const text = [lead.name, lead.email, lead.phone, lead.message, fieldBlob]
+    .map(normalizeText)
+    .join(" ");
+
+  let score = 0;
+  const reasons = [];
+
+  const hasLinks = countMatches(text, /https?:\/\//g);
+  if (hasLinks >= 2) {
+    score += 3;
+    reasons.push("Contains multiple links");
+  } else if (hasLinks === 1) {
+    score += 1;
+    reasons.push("Contains a link");
+  }
+
+  const spamKeywords = [
+    /buy now/i,
+    /click here/i,
+    /guaranteed/i,
+    /seo service/i,
+    /crypto/i,
+    /casino/i,
+    /viagra/i,
+    /loan/i,
+    /whatsapp/i,
+    /telegram/i,
+  ];
+  const matchedKeywords = spamKeywords.filter((keyword) => keyword.test(text));
+  if (matchedKeywords.length > 0) {
+    score += Math.min(4, matchedKeywords.length + 1);
+    reasons.push("Matched common spam keywords");
+  }
+
+  const digitsInMessage = countMatches(normalizeText(lead.message), /\d/g);
+  if (digitsInMessage >= 12) {
+    score += 2;
+    reasons.push("Message has excessive numeric content");
+  }
+
+  const email = normalizeText(lead.email);
+  if (email) {
+    const disposableDomainPattern =
+      /@(mailinator|guerrillamail|10minutemail|tempmail|trashmail|yopmail)\./i;
+    if (disposableDomainPattern.test(email)) {
+      score += 4;
+      reasons.push("Disposable email domain detected");
+    }
+
+    if (/\+[^@]{10,}@/.test(email)) {
+      score += 1;
+      reasons.push("Email alias appears auto-generated");
+    }
+  }
+
+  const message = normalizeText(lead.message);
+  if (message.length >= 600) {
+    score += 2;
+    reasons.push("Very long message body");
+  }
+
+  if (/([a-z])\1{6,}/i.test(message)) {
+    score += 2;
+    reasons.push("Repeated character pattern detected");
+  }
+
+  const isSpam = score >= scoreThreshold;
+  return {
+    isSpam,
+    label: isSpam ? "spam" : "not_spam",
+    score,
+    reasons,
+    threshold: scoreThreshold,
+  };
+}
+
 async function sendLeadEmail(lead) {
   const enabled = parseBoolean(process.env.AUTO_FORWARD_ENABLED, true);
   const to = cleanEnv(process.env.FORWARD_TO_EMAIL);
@@ -176,6 +268,7 @@ async function pushLeadToSuiteCrm(lead) {
 }
 
 module.exports = {
+  classifyLeadSpam,
   parseBoolean,
   sendLeadEmail,
   pushLeadToSuiteCrm,

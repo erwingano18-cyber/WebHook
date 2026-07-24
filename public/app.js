@@ -59,6 +59,15 @@ function buildSuiteCell(lead) {
   return createBadge("Not synced", "warn");
 }
 
+function buildSpamCell(lead) {
+  if (lead.spamLabel === "spam") {
+    const score = Number(lead.spamScore || 0);
+    return createBadge(`Spam (${score})`, "danger");
+  }
+
+  return createBadge("Not spam", "ok");
+}
+
 function setButtonLoading(button, isLoading, loadingText, defaultText) {
   button.disabled = isLoading;
   button.textContent = isLoading ? loadingText : defaultText;
@@ -244,7 +253,7 @@ function renderLeadRows(leads) {
 
   if (!leads.length) {
     tableBody.innerHTML =
-      '<tr><td colspan="8" class="empty">No leads yet</td></tr>';
+      '<tr><td colspan="9" class="empty">No leads yet</td></tr>';
     return;
   }
 
@@ -256,6 +265,7 @@ function renderLeadRows(leads) {
     row.querySelector(".email").textContent = lead.email || "-";
     row.querySelector(".phone").textContent = lead.phone || "-";
     row.querySelector(".message").textContent = lead.message || "-";
+    row.querySelector(".spam-status").innerHTML = buildSpamCell(lead);
     row.querySelector(".email-status").innerHTML = buildStatusCell(lead);
     row.querySelector(".suite-status").innerHTML = buildSuiteCell(lead);
 

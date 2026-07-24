@@ -20,6 +20,14 @@ function statusBadge(label, type) {
   return <span className={`badge ${type}`}>{label}</span>;
 }
 
+function spamBadge(lead) {
+  if (lead.spamLabel === "spam") {
+    return statusBadge(`Spam (${Number(lead.spamScore || 0)})`, "danger");
+  }
+
+  return statusBadge("Not spam", "ok");
+}
+
 function getFormName(lead) {
   const rp = lead.rawPayload;
   if (!rp) return "-";
@@ -197,6 +205,7 @@ function App() {
                 Form{sortIndicator(1)}
               </th>
               <th>Data</th>
+              <th>Spam</th>
               <th>Email</th>
               <th>SuiteCRM</th>
               <th>Actions</th>
@@ -205,7 +214,7 @@ function App() {
           <tbody>
             {!paged.length ? (
               <tr>
-                <td colSpan="6" className="empty">
+                <td colSpan="7" className="empty">
                   {search ? "No matching leads." : "No leads yet."}
                 </td>
               </tr>
@@ -222,6 +231,7 @@ function App() {
                           {JSON.stringify(getFieldData(lead), null, 2)}
                         </pre>
                       </td>
+                      <td>{spamBadge(lead)}</td>
                       <td>
                         {lead.emailForwarded
                           ? statusBadge("Forwarded", "ok")
@@ -323,7 +333,7 @@ function App() {
                     </tr>
                     {expandedId === lead.id && (
                       <tr key={`${lead.id}-payload`}>
-                        <td colSpan="6" className="payload-cell">
+                        <td colSpan="7" className="payload-cell">
                           <pre className="payload-pre">
                             {JSON.stringify(lead.rawPayload, null, 2)}
                           </pre>

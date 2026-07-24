@@ -64,6 +64,36 @@ async function initializeDatabase() {
       suitecrm_error TEXT NULL
     )
   `);
+
+  await ensureColumnExists("spam_score", "spam_score INT NOT NULL DEFAULT 0");
+  await ensureColumnExists(
+    "spam_label",
+    "spam_label VARCHAR(16) NOT NULL DEFAULT 'not_spam'",
+  );
+  await ensureColumnExists(
+    "spam_reasons_json",
+    "spam_reasons_json LONGTEXT NULL",
+  );
+}
+
+async function ensureColumnExists(columnName, definitionSql) {
+  const [rows] = await pool.query(
+    `
+      SELECT COUNT(*) AS count
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = 'leads'
+        AND COLUMN_NAME = ?
+    `,
+    [databaseName, columnName],
+  );
+
+  const exists = Number(rows?.[0]?.count || 0) > 0;
+  if (exists) {
+    return;
+  }
+
+  await pool.query(`ALTER TABLE leads ADD COLUMN ${definitionSql}`);
 }
 
 module.exports = {

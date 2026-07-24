@@ -2,7 +2,11 @@ const express = require("express");
 const crypto = require("crypto");
 
 const { addLead, updateLead } = require("../store");
-const { sendLeadEmail } = require("../services");
+const {
+  classifyLeadSpam,
+  parseBoolean,
+  sendLeadEmail,
+} = require("../services");
 
 const router = express.Router();
 
@@ -103,27 +107,45 @@ function checkWebhookSecret(req, res, next) {
 router.post("/webflow", checkWebhookSecret, async (req, res) => {
   try {
     const lead = extractLeadFromPayload(req.body);
+    const spamResult = classifyLeadSpam(lead);
+    lead.spamScore = spamResult.score;
+    lead.spamLabel = spamResult.label;
+    lead.spamReasons = spamResult.reasons;
+
     const savedLead = await addLead(lead);
     let emailForwarded = false;
     let emailForwardError = null;
+    const forwardSpamLeads = parseBoolean(
+      process.env.FORWARD_SPAM_LEADS,
+      false,
+    );
 
-    try {
-      const result = await sendLeadEmail(savedLead);
-      if (!result.skipped) {
-        emailForwarded = true;
+    if (savedLead.spamLabel === "spam" && !forwardSpamLeads) {
+      emailForwardError = "Skipped: lead classified as spam";
+      await updateLead(savedLead.id, {
+        emailForwardError,
+      });
+    } else {
+      try {
+        const result = await sendLeadEmail(savedLead);
+        if (!result.skipped) {
+          emailForwarded = true;
+          await updateLead(savedLead.id, {
+            emailForwarded: true,
+            emailForwardedAt: new Date().toISOString(),
+          });
+        } else {
+          emailForwardError = result.reason;
+          await updateLead(savedLead.id, {
+            emailForwardError: result.reason,
+          });
+        }
+      } catch (emailError) {
+        emailForwardError = emailError.message;
         await updateLead(savedLead.id, {
-          emailForwarded: true,
-          emailForwardedAt: new Date().toISOString(),
-        });
-      } else {
-        emailForwardError = result.reason;
-        await updateLead(savedLead.id, {
-          emailForwardError: result.reason,
+          emailForwardError: emailError.message,
         });
       }
-    } catch (emailError) {
-      emailForwardError = emailError.message;
-      await updateLead(savedLead.id, { emailForwardError: emailError.message });
     }
 
     res.status(201).json({
@@ -131,6 +153,8 @@ router.post("/webflow", checkWebhookSecret, async (req, res) => {
       leadId: savedLead.id,
       emailForwarded,
       emailForwardError,
+      spamLabel: savedLead.spamLabel,
+      spamScore: savedLead.spamScore,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
