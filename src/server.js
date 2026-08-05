@@ -9,6 +9,8 @@ const { OAuth2Client } = require("google-auth-library");
 const { deleteLead, getLeads, getLeadById, updateLead } = require("./store");
 const { initializeDatabase } = require("./db");
 const {
+  forgetSpamFromLead,
+  learnSpamFromLead,
   parseBoolean,
   sendLeadEmail,
   pushLeadToSuiteCrm,
@@ -253,6 +255,11 @@ app.post("/api/leads/:id/spam", requireAuth, async (req, res) => {
 
   try {
     const updatedLead = await updateLead(lead.id, updates);
+    if (nextLabel === "spam") {
+      await learnSpamFromLead(updatedLead);
+    } else {
+      await forgetSpamFromLead(lead.id);
+    }
     return res.json({ success: true, lead: updatedLead });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

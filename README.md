@@ -14,6 +14,7 @@ Features:
 - Lead dashboard (React + Redux)
 - Auto-forward email on new webhook leads
 - Button to push lead to SuiteCRM
+- Manual spam marking teaches future exact-match spam patterns
 
 ## Project Structure
 
@@ -72,6 +73,12 @@ Email forwarding values:
 - `SMTP_PORT=587`
 - `SMTP_USER=...`
 - `SMTP_PASS=...`
+
+Spam learning behavior:
+
+- Marking a lead as spam stores a learned fingerprint in MySQL.
+- Future submissions are auto-marked as spam when they match a learned fingerprint by message, field payload, subject + email, or subject + phone.
+- Marking that same lead back to not spam removes its learned fingerprint.
 
 SuiteCRM values:
 

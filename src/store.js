@@ -101,6 +101,104 @@ async function deleteLead(id) {
   return result.affectedRows > 0;
 }
 
+async function upsertSpamFingerprint(fingerprint) {
+  const pool = getPool();
+  await pool.query(
+    `
+      INSERT INTO spam_fingerprints (
+        source_lead_id,
+        created_at,
+        updated_at,
+        subject_norm,
+        email_norm,
+        phone_norm,
+        message_hash,
+        fields_hash
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        updated_at = VALUES(updated_at),
+        subject_norm = VALUES(subject_norm),
+        email_norm = VALUES(email_norm),
+        phone_norm = VALUES(phone_norm),
+        message_hash = VALUES(message_hash),
+        fields_hash = VALUES(fields_hash)
+    `,
+    [
+      fingerprint.sourceLeadId,
+      normalizeDate(new Date()),
+      normalizeDate(new Date()),
+      fingerprint.subjectNorm || null,
+      fingerprint.emailNorm || null,
+      fingerprint.phoneNorm || null,
+      fingerprint.messageHash || null,
+      fingerprint.fieldsHash || null,
+    ],
+  );
+}
+
+async function deleteSpamFingerprintBySourceLeadId(sourceLeadId) {
+  const pool = getPool();
+  await pool.query("DELETE FROM spam_fingerprints WHERE source_lead_id = ?", [
+    sourceLeadId,
+  ]);
+}
+
+async function findSpamFingerprintMatch(fingerprint) {
+  const pool = getPool();
+
+  if (fingerprint.messageHash) {
+    const [rows] = await pool.query(
+      "SELECT source_lead_id FROM spam_fingerprints WHERE message_hash = ? LIMIT 1",
+      [fingerprint.messageHash],
+    );
+    if (rows[0]) {
+      return { matched: true, matchedBy: "message" };
+    }
+  }
+
+  if (fingerprint.fieldsHash) {
+    const [rows] = await pool.query(
+      "SELECT source_lead_id FROM spam_fingerprints WHERE fields_hash = ? LIMIT 1",
+      [fingerprint.fieldsHash],
+    );
+    if (rows[0]) {
+      return { matched: true, matchedBy: "fields" };
+    }
+  }
+
+  if (fingerprint.subjectNorm && fingerprint.emailNorm) {
+    const [rows] = await pool.query(
+      `
+        SELECT source_lead_id
+        FROM spam_fingerprints
+        WHERE subject_norm = ? AND email_norm = ?
+        LIMIT 1
+      `,
+      [fingerprint.subjectNorm, fingerprint.emailNorm],
+    );
+    if (rows[0]) {
+      return { matched: true, matchedBy: "subject_email" };
+    }
+  }
+
+  if (fingerprint.subjectNorm && fingerprint.phoneNorm) {
+    const [rows] = await pool.query(
+      `
+        SELECT source_lead_id
+        FROM spam_fingerprints
+        WHERE subject_norm = ? AND phone_norm = ?
+        LIMIT 1
+      `,
+      [fingerprint.subjectNorm, fingerprint.phoneNorm],
+    );
+    if (rows[0]) {
+      return { matched: true, matchedBy: "subject_phone" };
+    }
+  }
+
+  return { matched: false, matchedBy: null };
+}
+
 async function updateLead(id, updates) {
   const pool = getPool();
   const allowed = {
@@ -173,7 +271,10 @@ async function updateLead(id, updates) {
 module.exports = {
   addLead,
   deleteLead,
+  deleteSpamFingerprintBySourceLeadId,
+  findSpamFingerprintMatch,
   getLeads,
   getLeadById,
+  upsertSpamFingerprint,
   updateLead,
 };

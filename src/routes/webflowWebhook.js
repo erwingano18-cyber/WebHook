@@ -107,7 +107,7 @@ function checkWebhookSecret(req, res, next) {
 router.post("/webflow", checkWebhookSecret, async (req, res) => {
   try {
     const lead = extractLeadFromPayload(req.body);
-    const spamResult = classifyLeadSpam(lead);
+    const spamResult = await classifyLeadSpam(lead);
     lead.spamScore = spamResult.score;
     lead.spamLabel = spamResult.label;
     lead.spamReasons = spamResult.reasons;

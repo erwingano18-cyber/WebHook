@@ -1,5 +1,12 @@
 const axios = require("axios");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+
+const {
+  deleteSpamFingerprintBySourceLeadId,
+  findSpamFingerprintMatch,
+  upsertSpamFingerprint,
+} = require("./store");
 
 let cachedSuiteToken = null;
 let tokenExpiryTime = 0;
@@ -69,7 +76,77 @@ function countMatches(text, pattern) {
   return matches ? matches.length : 0;
 }
 
-function classifyLeadSpam(lead) {
+function normalizeWhitespace(value) {
+  return normalizeText(value).replace(/\s+/g, " ").trim();
+}
+
+function normalizePhone(value) {
+  return String(value || "").replace(/\D+/g, "");
+}
+
+function getLeadSubject(lead) {
+  const rawPayload = lead.rawPayload;
+  if (rawPayload && rawPayload.payload && rawPayload.payload.name) {
+    return rawPayload.payload.name;
+  }
+
+  if (rawPayload && rawPayload.name) {
+    return rawPayload.name;
+  }
+
+  if (lead.fields && lead.fields.name) {
+    return lead.fields.name;
+  }
+
+  return "";
+}
+
+function hashNormalizedValue(value) {
+  const normalized = normalizeWhitespace(value);
+  if (!normalized) {
+    return "";
+  }
+
+  return crypto.createHash("sha256").update(normalized).digest("hex");
+}
+
+function buildLeadSpamFingerprint(lead) {
+  const normalizedFields = JSON.stringify(lead.fields || {});
+
+  return {
+    sourceLeadId: lead.id,
+    subjectNorm: normalizeWhitespace(getLeadSubject(lead)).slice(0, 255),
+    emailNorm: normalizeWhitespace(lead.email).slice(0, 255),
+    phoneNorm: normalizePhone(lead.phone).slice(0, 80),
+    messageHash: hashNormalizedValue(lead.message),
+    fieldsHash: hashNormalizedValue(normalizedFields),
+  };
+}
+
+function hasUsefulFingerprintData(fingerprint) {
+  return Boolean(
+    fingerprint.messageHash ||
+    fingerprint.fieldsHash ||
+    (fingerprint.subjectNorm && fingerprint.emailNorm) ||
+    (fingerprint.subjectNorm && fingerprint.phoneNorm),
+  );
+}
+
+async function learnSpamFromLead(lead) {
+  const fingerprint = buildLeadSpamFingerprint(lead);
+  if (!hasUsefulFingerprintData(fingerprint)) {
+    return false;
+  }
+
+  await upsertSpamFingerprint(fingerprint);
+  return true;
+}
+
+async function forgetSpamFromLead(leadId) {
+  await deleteSpamFingerprintBySourceLeadId(leadId);
+}
+
+async function classifyLeadSpam(lead) {
   const scoreThreshold = Number(process.env.SPAM_SCORE_THRESHOLD || 5);
   const fieldBlob = JSON.stringify(lead.fields || {}).toLowerCase();
   const text = [lead.name, lead.email, lead.phone, lead.message, fieldBlob]
@@ -136,6 +213,17 @@ function classifyLeadSpam(lead) {
   if (/([a-z])\1{6,}/i.test(message)) {
     score += 2;
     reasons.push("Repeated character pattern detected");
+  }
+
+  const fingerprint = buildLeadSpamFingerprint(lead);
+  if (hasUsefulFingerprintData(fingerprint)) {
+    const learnedMatch = await findSpamFingerprintMatch(fingerprint);
+    if (learnedMatch.matched) {
+      score = Math.max(score, scoreThreshold);
+      reasons.push(
+        `Matched learned spam pattern (${learnedMatch.matchedBy.replace("_", " ")})`,
+      );
+    }
   }
 
   const isSpam = score >= scoreThreshold;
@@ -268,7 +356,9 @@ async function pushLeadToSuiteCrm(lead) {
 }
 
 module.exports = {
+  forgetSpamFromLead,
   classifyLeadSpam,
+  learnSpamFromLead,
   parseBoolean,
   sendLeadEmail,
   pushLeadToSuiteCrm,

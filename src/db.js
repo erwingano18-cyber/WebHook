@@ -74,6 +74,25 @@ async function initializeDatabase() {
     "spam_reasons_json",
     "spam_reasons_json LONGTEXT NULL",
   );
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS spam_fingerprints (
+      id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      source_lead_id VARCHAR(64) NOT NULL,
+      created_at DATETIME NOT NULL,
+      updated_at DATETIME NULL,
+      subject_norm VARCHAR(255) NULL,
+      email_norm VARCHAR(255) NULL,
+      phone_norm VARCHAR(80) NULL,
+      message_hash CHAR(64) NULL,
+      fields_hash CHAR(64) NULL,
+      UNIQUE KEY unique_source_lead_id (source_lead_id),
+      KEY idx_spam_fingerprints_message_hash (message_hash),
+      KEY idx_spam_fingerprints_fields_hash (fields_hash),
+      KEY idx_spam_fingerprints_subject_email (subject_norm, email_norm),
+      KEY idx_spam_fingerprints_subject_phone (subject_norm, phone_norm)
+    )
+  `);
 }
 
 async function ensureColumnExists(columnName, definitionSql) {
