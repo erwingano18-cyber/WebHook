@@ -61,6 +61,10 @@ export async function syncLeadToSuiteCrm(id) {
   return apiFetch(`/api/leads/${id}/suitecrm`, { method: "POST" });
 }
 
+export async function toggleLeadSpam(id) {
+  return apiFetch(`/api/leads/${id}/spam`, { method: "POST" });
+}
+
 export async function removeLead(id) {
   return apiFetch(`/api/leads/${id}`, { method: "DELETE" });
 }

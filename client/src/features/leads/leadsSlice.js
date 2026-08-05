@@ -5,6 +5,7 @@ import {
   getLeads,
   removeLead,
   syncLeadToSuiteCrm,
+  toggleLeadSpam,
 } from "./api";
 
 export const fetchLeads = createAsyncThunk("leads/fetch", async () =>
@@ -36,6 +37,15 @@ export const runDeleteLead = createAsyncThunk(
   "leads/delete",
   async (id, { dispatch }) => {
     await removeLead(id);
+    await dispatch(fetchLeads());
+    return id;
+  },
+);
+
+export const runToggleSpam = createAsyncThunk(
+  "leads/toggleSpam",
+  async (id, { dispatch }) => {
+    await toggleLeadSpam(id);
     await dispatch(fetchLeads());
     return id;
   },
@@ -97,6 +107,16 @@ const leadsSlice = createSlice({
       .addCase(runDeleteLead.rejected, (state, action) => {
         delete state.actionById[action.meta.arg];
         state.error = action.error.message || "Failed to remove lead";
+      })
+      .addCase(runToggleSpam.pending, (state, action) => {
+        state.actionById[action.meta.arg] = "toggling-spam";
+      })
+      .addCase(runToggleSpam.fulfilled, (state, action) => {
+        delete state.actionById[action.payload];
+      })
+      .addCase(runToggleSpam.rejected, (state, action) => {
+        delete state.actionById[action.meta.arg];
+        state.error = action.error.message || "Failed to update spam status";
       });
   },
 });

@@ -12,6 +12,7 @@ import {
   runDeleteLead,
   runForwardEmail,
   runSuiteSync,
+  runToggleSpam,
 } from "./features/leads/leadsSlice";
 
 function formatDate(date) {
@@ -26,12 +27,30 @@ function statusBadge(label, type) {
   return <span className={`badge ${type}`}>{label}</span>;
 }
 
-function spamBadge(lead) {
+function spamBadge(lead, onToggle, disabled) {
   if (lead.spamLabel === "spam") {
-    return statusBadge(`Spam (${Number(lead.spamScore || 0)})`, "danger");
+    return (
+      <button
+        type="button"
+        className="badge-toggle"
+        onClick={onToggle}
+        disabled={disabled}
+      >
+        {statusBadge(`Spam (${Number(lead.spamScore || 0)})`, "danger")}
+      </button>
+    );
   }
 
-  return statusBadge("Not spam", "ok");
+  return (
+    <button
+      type="button"
+      className="badge-toggle"
+      onClick={onToggle}
+      disabled={disabled}
+    >
+      {statusBadge("Not spam", "ok")}
+    </button>
+  );
 }
 
 function getFormName(lead) {
@@ -368,7 +387,13 @@ function App() {
                           {JSON.stringify(getFieldData(lead), null, 2)}
                         </pre>
                       </td>
-                      <td>{spamBadge(lead)}</td>
+                      <td>
+                        {spamBadge(
+                          lead,
+                          () => dispatch(runToggleSpam(lead.id)),
+                          action === "toggling-spam",
+                        )}
+                      </td>
                       <td>
                         {lead.emailForwarded
                           ? statusBadge("Forwarded", "ok")

@@ -231,6 +231,34 @@ app.post("/api/leads/:id/suitecrm", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/api/leads/:id/spam", requireAuth, async (req, res) => {
+  const lead = await getLeadById(req.params.id);
+  if (!lead) {
+    return res.status(404).json({ error: "Lead not found." });
+  }
+
+  const nextLabel = lead.spamLabel === "spam" ? "not_spam" : "spam";
+  const updates =
+    nextLabel === "spam"
+      ? {
+          spamLabel: "spam",
+          spamScore: Math.max(Number(lead.spamScore || 0), 1),
+          spamReasons: ["Manually marked as spam"],
+        }
+      : {
+          spamLabel: "not_spam",
+          spamScore: 0,
+          spamReasons: [],
+        };
+
+  try {
+    const updatedLead = await updateLead(lead.id, updates);
+    return res.json({ success: true, lead: updatedLead });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.delete("/api/leads/:id", requireAuth, async (req, res) => {
   try {
     const deleted = await deleteLead(req.params.id);
