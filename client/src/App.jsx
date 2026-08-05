@@ -80,6 +80,40 @@ function getFieldData(lead) {
   return f;
 }
 
+function removeFalseFields(value) {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item) => item !== false)
+      .map((item) => removeFalseFields(item));
+  }
+
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [key, fieldValue] of Object.entries(value)) {
+      if (fieldValue === false) {
+        continue;
+      }
+      out[key] = removeFalseFields(fieldValue);
+    }
+    return out;
+  }
+
+  return value;
+}
+
+function getVisibleFieldData(lead) {
+  return removeFalseFields(getFieldData(lead));
+}
+
+function truncateText(value, maxLength = 120) {
+  const text = String(value || "-");
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength)}...`;
+}
+
 function App() {
   const dispatch = useDispatch();
   const { items, status, config, error, actionById } = useSelector(
@@ -197,7 +231,7 @@ function App() {
   const q = search.toLowerCase();
   const filtered = items.filter((lead) => {
     if (!q) return true;
-    const fields = getFieldData(lead);
+    const fields = getVisibleFieldData(lead);
     return (
       getFormName(lead).toLowerCase().includes(q) ||
       JSON.stringify(fields).toLowerCase().includes(q)
@@ -386,6 +420,11 @@ function App() {
             ) : (
               paged.map((lead) => {
                 const action = actionById[lead.id];
+                const dataText = JSON.stringify(
+                  getVisibleFieldData(lead),
+                  null,
+                  2,
+                );
                 return (
                   <Fragment key={lead.id}>
                     <tr key={lead.id}>
@@ -393,9 +432,9 @@ function App() {
                       <td className="form-name" title={getFormName(lead)}>
                         {truncateSubject(getFormName(lead))}
                       </td>
-                      <td className="data-json">
+                      <td className="data-json" title={dataText}>
                         <pre className="fields-pre">
-                          {JSON.stringify(getFieldData(lead), null, 2)}
+                          {truncateText(dataText)}
                         </pre>
                       </td>
                       <td>
