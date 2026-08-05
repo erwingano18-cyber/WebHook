@@ -62,10 +62,32 @@ function buildSuiteCell(lead) {
 function buildSpamCell(lead) {
   if (lead.spamLabel === "spam") {
     const score = Number(lead.spamScore || 0);
-    return createBadge(`Spam (${score})`, "danger");
+    return `<button type="button" class="badge-toggle spam-toggle" data-lead-id="${lead.id}">${createBadge(`Spam (${score})`, "danger")}</button>`;
   }
 
-  return createBadge("Not spam", "ok");
+  return `<button type="button" class="badge-toggle spam-toggle" data-lead-id="${lead.id}">${createBadge("Not spam", "ok")}</button>`;
+}
+
+async function toggleSpamStatus(leadId, button) {
+  if (!leadId || !button) {
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/leads/${leadId}/spam`, {
+      method: "POST",
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      throw new Error(json.error || "Request failed");
+    }
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    await loadLeads();
+  }
 }
 
 function setButtonLoading(button, isLoading, loadingText, defaultText) {
@@ -312,6 +334,19 @@ async function loadLeads() {
 
 refreshButton.addEventListener("click", () => {
   loadLeads().catch((error) => alert(error.message));
+});
+
+tableBody.addEventListener("click", (event) => {
+  const button = event.target.closest(".spam-toggle");
+  if (!button) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const leadId = button.dataset.leadId;
+  toggleSpamStatus(leadId, button).catch((error) => alert(error.message));
 });
 
 Promise.all([loadServiceConfig(), loadLeads()]).catch((error) => {

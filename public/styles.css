@@ -203,6 +203,18 @@ td.message {
   background: color-mix(in srgb, var(--danger) 10%, white);
 }
 
+.badge-toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.badge-toggle:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .btn {
   appearance: none;
   border: 1px solid transparent;
