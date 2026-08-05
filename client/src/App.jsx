@@ -62,6 +62,15 @@ function getFormName(lead) {
   return "-";
 }
 
+function truncateSubject(value, maxLength = 15) {
+  const subject = String(value || "-");
+  if (subject.length <= maxLength) {
+    return subject;
+  }
+
+  return `${subject.slice(0, maxLength)}...`;
+}
+
 function getFieldData(lead) {
   const f = lead.fields;
   if (!f) return {};
@@ -358,7 +367,7 @@ function App() {
                 Received{sortIndicator(0)}
               </th>
               <th className="sortable" onClick={() => toggleSort(1)}>
-                Form{sortIndicator(1)}
+                Subject{sortIndicator(1)}
               </th>
               <th>Data</th>
               <th>Spam</th>
@@ -381,7 +390,9 @@ function App() {
                   <Fragment key={lead.id}>
                     <tr key={lead.id}>
                       <td>{formatDate(lead.createdAt)}</td>
-                      <td className="form-name">{getFormName(lead)}</td>
+                      <td className="form-name" title={getFormName(lead)}>
+                        {truncateSubject(getFormName(lead))}
+                      </td>
                       <td className="data-json">
                         <pre className="fields-pre">
                           {JSON.stringify(getFieldData(lead), null, 2)}
