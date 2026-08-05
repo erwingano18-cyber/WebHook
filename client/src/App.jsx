@@ -250,7 +250,7 @@ function App() {
         <header className="hero">
           <div>
             <p className="eyebrow">Secure Access</p>
-            <h1>Webflow Leads Dashboard</h1>
+            <h1>Xillium Contact Us Leads</h1>
             <p className="sub">Sign in with Google to view and manage leads.</p>
           </div>
         </header>
@@ -273,7 +273,7 @@ function App() {
       <header className="hero">
         <div>
           <p className="eyebrow">Node.js + Express + MySQL</p>
-          <h1>Webflow Leads Dashboard</h1>
+          <h1>Xillium Contact Us Leads</h1>
           <p className="sub">
             React + Vite + Redux frontend connected to your webhook backend.
           </p>
