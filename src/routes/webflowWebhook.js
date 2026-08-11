@@ -10,6 +10,39 @@ const {
 
 const router = express.Router();
 
+function removeFalseAndBlankValues(value) {
+  if (value === false || value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const sanitizedItems = value
+      .map(removeFalseAndBlankValues)
+      .filter((item) => item !== undefined);
+    return sanitizedItems.length > 0 ? sanitizedItems : undefined;
+  }
+
+  if (typeof value === "object") {
+    const sanitizedObject = {};
+    for (const [key, innerValue] of Object.entries(value)) {
+      const sanitizedValue = removeFalseAndBlankValues(innerValue);
+      if (sanitizedValue !== undefined) {
+        sanitizedObject[key] = sanitizedValue;
+      }
+    }
+    return Object.keys(sanitizedObject).length > 0
+      ? sanitizedObject
+      : undefined;
+  }
+
+  return value;
+}
+
 router.get("/", (req, res) => {
   res.json({
     ok: true,
@@ -42,7 +75,7 @@ function normalizeFields(payload) {
         result[field.name] = field.value;
       }
     });
-    return result;
+    return removeFalseAndBlankValues(result) || {};
   }
 
   if (candidate.payload && typeof candidate.payload === "object") {
@@ -54,12 +87,12 @@ function normalizeFields(payload) {
       typeof inner.data === "object" &&
       !Array.isArray(inner.data)
     ) {
-      return inner.data;
+      return removeFalseAndBlankValues(inner.data) || {};
     }
-    return inner;
+    return removeFalseAndBlankValues(inner) || {};
   }
 
-  return candidate;
+  return removeFalseAndBlankValues(candidate) || {};
 }
 
 function extractLeadFromPayload(payload) {

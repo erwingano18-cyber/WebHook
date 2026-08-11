@@ -84,6 +84,39 @@ function normalizePhone(value) {
   return String(value || "").replace(/\D+/g, "");
 }
 
+function removeFalseAndBlankValues(value) {
+  if (value === false || value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const sanitizedItems = value
+      .map(removeFalseAndBlankValues)
+      .filter((item) => item !== undefined);
+    return sanitizedItems.length > 0 ? sanitizedItems : undefined;
+  }
+
+  if (typeof value === "object") {
+    const sanitizedObject = {};
+    for (const [key, innerValue] of Object.entries(value)) {
+      const sanitizedValue = removeFalseAndBlankValues(innerValue);
+      if (sanitizedValue !== undefined) {
+        sanitizedObject[key] = sanitizedValue;
+      }
+    }
+    return Object.keys(sanitizedObject).length > 0
+      ? sanitizedObject
+      : undefined;
+  }
+
+  return value;
+}
+
 function getLeadSubject(lead) {
   const rawPayload = lead.rawPayload;
   if (rawPayload && rawPayload.payload && rawPayload.payload.name) {
@@ -335,13 +368,14 @@ async function pushLeadToSuiteCrm(lead) {
   const payload = {
     data: {
       type: "Leads",
-      attributes: {
-        first_name: firstName,
-        last_name: lastName,
-        email1: lead.email || "",
-        phone_work: lead.phone || "",
-        description: lead.message || JSON.stringify(lead.fields || {}),
-      },
+      attributes:
+        removeFalseAndBlankValues({
+          first_name: firstName,
+          last_name: lastName,
+          email1: lead.email || "",
+          phone_work: lead.phone || "",
+          description: lead.message || JSON.stringify(lead.fields || {}),
+        }) || {},
     },
   };
 
