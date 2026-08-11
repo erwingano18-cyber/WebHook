@@ -9,7 +9,8 @@
     "dev:server": "nodemon src/server.js",
     "dev:client": "npm --prefix client run dev",
     "build:client": "npm --prefix client run build",
-    "preview:client": "npm --prefix client run preview"
+    "preview:client": "npm --prefix client run preview",
+    "sanitize:db": "node src/sanitizeDatabase.js"
   },
   "keywords": [
     "webflow",
