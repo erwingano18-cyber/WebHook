@@ -50,17 +50,113 @@ function createMailer() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatFieldValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value);
+}
+
+function getPayloadFields(lead) {
+  if (lead && lead.fields && typeof lead.fields === "object") {
+    return lead.fields;
+  }
+
+  const rawPayload = lead && lead.rawPayload;
+  if (!rawPayload || typeof rawPayload !== "object") {
+    return {};
+  }
+
+  const candidate =
+    rawPayload.data && typeof rawPayload.data === "object"
+      ? rawPayload.data
+      : rawPayload;
+
+  if (candidate.payload && typeof candidate.payload === "object") {
+    const inner = candidate.payload;
+    if (
+      inner.data &&
+      typeof inner.data === "object" &&
+      !Array.isArray(inner.data)
+    ) {
+      return inner.data;
+    }
+    return inner;
+  }
+
+  if (Array.isArray(candidate.fields)) {
+    return candidate.fields.reduce((acc, field) => {
+      if (field && field.name) {
+        acc[field.name] = field.value;
+      }
+      return acc;
+    }, {});
+  }
+
+  return candidate && typeof candidate === "object" ? candidate : {};
+}
+
 function toLeadHtml(lead) {
+  const fields = getPayloadFields(lead);
+  const entries = Object.entries(fields);
+
+  const rows =
+    entries.length > 0
+      ? entries
+          .map(([key, value]) => {
+            const formattedValue = formatFieldValue(value);
+            return `
+              <tr>
+                <th style="text-align:left; padding:8px 10px; vertical-align:top;">${escapeHtml(key)}</th>
+                <td style="padding:8px 10px; white-space:pre-wrap;">${escapeHtml(formattedValue)}</td>
+              </tr>`;
+          })
+          .join("")
+      : `
+        <tr>
+          <td colspan="2" style="padding:8px 10px;">No payload fields were present.</td>
+        </tr>`;
+
   return `
     <h2>New Webflow Lead</h2>
-    <p><strong>Name:</strong> ${lead.name || "-"} </p>
-    <p><strong>Email:</strong> ${lead.email || "-"} </p>
-    <p><strong>Phone:</strong> ${lead.phone || "-"} </p>
-    <p><strong>Message:</strong> ${lead.message || "-"} </p>
-    <p><strong>Received:</strong> ${lead.createdAt}</p>
-    <hr>
-    <pre>${JSON.stringify(lead.fields, null, 2)}</pre>
+    <p><strong>Received:</strong> ${escapeHtml(lead.createdAt || "-")}</p>
+    <table style="border-collapse: collapse; width: 100%; max-width: 700px; font-family: Arial, sans-serif;">
+      ${rows}
+    </table>
   `;
+}
+
+function buildLeadEmailContent(lead) {
+  const fields = getPayloadFields(lead);
+  const subject = `New Lead: ${lead.name || lead.email || lead.id}`;
+
+  const textEntries = Object.entries(fields);
+  const textBody =
+    textEntries.length > 0
+      ? textEntries
+          .map(([key, value]) => `${key}: ${formatFieldValue(value)}`)
+          .join("\n")
+      : "No payload fields were present.";
+
+  return {
+    subject,
+    text: textBody,
+    html: toLeadHtml(lead),
+  };
 }
 
 function normalizeText(value) {
@@ -291,12 +387,14 @@ async function sendLeadEmail(lead) {
     return { skipped: true, reason: "SMTP settings are incomplete" };
   }
 
+  const emailContent = buildLeadEmailContent(lead);
+
   await mailer.sendMail({
     from,
     to,
-    subject: `New Lead: ${lead.name || lead.email || lead.id}`,
-    text: JSON.stringify(lead, null, 2),
-    html: toLeadHtml(lead),
+    subject: emailContent.subject,
+    text: emailContent.text,
+    html: emailContent.html,
   });
 
   return { skipped: false };
@@ -396,4 +494,5 @@ module.exports = {
   parseBoolean,
   sendLeadEmail,
   pushLeadToSuiteCrm,
+  buildLeadEmailContent,
 };
