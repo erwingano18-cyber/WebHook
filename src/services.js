@@ -59,6 +59,27 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function formatReadableDate(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
 function formatFieldValue(value) {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -132,24 +153,23 @@ function toLeadHtml(lead) {
         </tr>`;
 
   return `
-    <h2>New Webflow Lead</h2>
-    <p><strong>Received:</strong> ${escapeHtml(lead.createdAt || "-")}</p>
     <table style="border-collapse: collapse; width: 100%; max-width: 700px; font-family: Arial, sans-serif;">
       ${rows}
+      <tr>
+        <th style="text-align:left; padding:8px 10px; vertical-align:top;">Received</th>
+        <td style="padding:8px 10px; white-space:pre-wrap;">${escapeHtml(formatReadableDate(lead.createdAt))}</td>
+      </tr>
     </table>
   `;
 }
 
 function buildLeadEmailContent(lead) {
   const fields = getPayloadFields(lead);
-  const subject = `New Lead: ${lead.name || lead.email || lead.id}`;
+  const subject = "New Webflow Lead";
 
-  const textEntries = Object.entries(fields);
   const textBody =
-    textEntries.length > 0
-      ? textEntries
-          .map(([key, value]) => `${key}: ${formatFieldValue(value)}`)
-          .join("\n")
+    Object.keys(fields).length > 0
+      ? JSON.stringify(fields, null, 2)
       : "No payload fields were present.";
 
   return {
