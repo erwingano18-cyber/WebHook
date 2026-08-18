@@ -163,9 +163,65 @@ function toLeadHtml(lead) {
   `;
 }
 
+function getPayloadName(lead) {
+  const rawPayload = lead && lead.rawPayload;
+  const payloadObject =
+    rawPayload && rawPayload.payload && typeof rawPayload.payload === "object"
+      ? rawPayload.payload
+      : rawPayload;
+
+  const payloadName =
+    payloadObject && payloadObject.name ? String(payloadObject.name) : "";
+  if (payloadName) {
+    return payloadName;
+  }
+
+  const fields = getPayloadFields(lead);
+  const nameEntry = Object.entries(fields).find(([key]) => /^name$/i.test(key));
+
+  if (
+    nameEntry &&
+    nameEntry[1] !== undefined &&
+    nameEntry[1] !== null &&
+    nameEntry[1] !== ""
+  ) {
+    return String(nameEntry[1]);
+  }
+
+  return lead && (lead.name || lead.email || lead.id)
+    ? String(lead.name || lead.email || lead.id)
+    : "Lead";
+}
+
+function getPayloadDataName(lead) {
+  const rawPayload = lead && lead.rawPayload;
+  const payloadObject =
+    rawPayload && rawPayload.payload && typeof rawPayload.payload === "object"
+      ? rawPayload.payload
+      : rawPayload;
+
+  const data =
+    payloadObject &&
+    payloadObject.data &&
+    typeof payloadObject.data === "object"
+      ? payloadObject.data
+      : getPayloadFields(lead);
+  const directName = data && (data.Name || data.name);
+
+  if (directName !== undefined && directName !== null && directName !== "") {
+    return String(directName);
+  }
+
+  return lead && (lead.name || lead.email || lead.id)
+    ? String(lead.name || lead.email || lead.id)
+    : "Lead";
+}
+
 function buildLeadEmailContent(lead) {
   const fields = getPayloadFields(lead);
-  const subject = "New Webflow Lead";
+  const payloadFormName = getPayloadName(lead);
+  const payloadDataName = getPayloadDataName(lead);
+  const subject = `${payloadFormName} New Lead: ${payloadDataName}`;
 
   const textBody =
     Object.keys(fields).length > 0
