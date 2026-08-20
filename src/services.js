@@ -445,6 +445,7 @@ async function classifyLeadSpam(lead) {
 async function sendLeadEmail(lead) {
   const enabled = parseBoolean(process.env.AUTO_FORWARD_ENABLED, true);
   const to = cleanEnv(process.env.FORWARD_TO_EMAIL);
+  const replyTo = cleanEnv(process.env.REPLY_TO_EMAIL);
   const from =
     cleanEnv(process.env.EMAIL_FROM) || cleanEnv(process.env.SMTP_USER);
 
@@ -472,6 +473,7 @@ async function sendLeadEmail(lead) {
     subject: emailContent.subject,
     text: emailContent.text,
     html: emailContent.html,
+    replyTo,
   });
 
   return { skipped: false };
