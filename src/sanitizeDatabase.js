@@ -2,6 +2,9 @@ require("dotenv").config();
 
 const { getPool, initializeDatabase } = require("./db");
 
+const LINK_PATTERN =
+  /(?:https?:\/\/|ftp:\/\/|www\.|(?<![@\w])(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
+
 function sanitizeValue(value) {
   if (value === false || value === null || value === undefined) {
     return undefined;
@@ -9,7 +12,7 @@ function sanitizeValue(value) {
 
   if (typeof value === "string") {
     const trimmed = value.trim();
-    return trimmed ? trimmed : undefined;
+    return trimmed && !LINK_PATTERN.test(trimmed) ? trimmed : undefined;
   }
 
   if (Array.isArray(value)) {

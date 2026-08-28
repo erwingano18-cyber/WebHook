@@ -10,6 +10,25 @@ const {
 
 const router = express.Router();
 
+const LINK_PATTERN =
+  /(?:https?:\/\/|ftp:\/\/|www\.|(?<![@\w])(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|\b))/i;
+
+function containsLink(value) {
+  if (typeof value === "string") {
+    return LINK_PATTERN.test(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(containsLink);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).some(containsLink);
+  }
+
+  return false;
+}
+
 function removeFalseAndBlankValues(value) {
   if (value === false || value === null || value === undefined) {
     return undefined;
@@ -139,6 +158,14 @@ function checkWebhookSecret(req, res, next) {
 
 router.post("/webflow", checkWebhookSecret, async (req, res) => {
   try {
+    const fields = normalizeFields(req.body);
+    if (containsLink(fields)) {
+      return res.status(400).json({
+        success: false,
+        error: "Links are not allowed in lead fields.",
+      });
+    }
+
     const lead = extractLeadFromPayload(req.body);
     const spamResult = await classifyLeadSpam(lead);
     lead.spamScore = spamResult.score;
