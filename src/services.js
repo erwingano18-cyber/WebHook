@@ -33,7 +33,7 @@ function createMailer() {
   const SMTP_SECURE = process.env.SMTP_SECURE;
   const SMTP_USER =
     cleanEnv(process.env.SMTP_USER) || cleanEnv(process.env.EMAIL_FROM);
-  const SMTP_PASS = cleanEnv(process.env.SMTP_PASS);
+  const SMTP_PASS = cleanEnv(process.env.SMTP_PASS).replace(/\s+/g, "");
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
     return null;
